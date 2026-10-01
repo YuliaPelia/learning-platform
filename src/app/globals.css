@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+/*
+  Дизайн-токени ITCodeCraft — ті самі кольори, що в макетах.
+  Використання в класах: bg-ink, text-muted, border-line, text-accent тощо.
+*/
+@theme {
+  --color-ink: #0f1226;
+  --color-deep: #131733;
+  --color-surface: #171b36;
+  --color-surface-2: #1e2345;
+  --color-line: #2c3160;
+  --color-line-2: #3a4078;
+  --color-text: #f2f3fa;
+  --color-soft: #c3c7e0;
+  --color-muted: #a6abcb;
+  --color-faint: #6e73a3;
+  --color-accent: #7ce38b;
+  --color-amber: #ffb547;
+  --color-violet: #9c8cff;
+  --color-danger: #ff8a8a;
+
+  --font-display: "Unbounded", system-ui, sans-serif;
+  --font-sans: "Onest", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+html {
+  background: var(--color-ink);
+  color: var(--color-text);
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Власні класи-утиліти (у Tailwind v4 — через @utility, щоб їх можна було комбінувати) */
+@utility btn {
+  @apply inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+}
+@utility btn-primary {
+  @apply btn bg-accent text-ink hover:bg-[#95eca2];
+}
+@utility btn-ghost {
+  @apply btn border border-line-2 text-text hover:bg-surface-2;
+}
+@utility card {
+  @apply rounded-3xl border border-line bg-surface;
+}
+@utility field {
+  @apply h-12 w-full rounded-xl border border-line-2 bg-ink px-4 text-text placeholder:text-faint focus:border-accent focus:outline-none;
+}
+@utility label {
+  @apply mb-1.5 block text-sm font-medium text-soft;
+}
