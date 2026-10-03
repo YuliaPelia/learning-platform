@@ -2,7 +2,7 @@
  * Правила доступу до уроків — "охоронець на вході".
  * Чисті функції без бази даних: їх легко тестувати (див. access.test.ts).
  */
-import { FREE_LESSONS, GRACE_DAYS, PLANS, type PlanId } from "./plans";
+import { FREE_LESSONS, GRACE_DAYS, PLANS, PLAN_RANK, type PlanId } from "./plans";
 
 export type SubscriptionLike = {
   plan: PlanId;
@@ -30,8 +30,12 @@ export function isSubscriptionLive(sub: SubscriptionLike, now: Date = new Date()
   }
 }
 
-/** Чи покриває підписка цей курс. */
-export function subscriptionCoversCourse(sub: SubscriptionLike, courseId: string): boolean {
+/**
+ * Чи покриває підписка цей курс: тариф не нижчий за мінімальний тариф курсу
+ * і це або Преміум (усі курси), або саме той курс, який обрали.
+ */
+export function subscriptionCoversCourse(sub: SubscriptionLike, courseId: string, minPlan: PlanId = "basic"): boolean {
+  if (PLAN_RANK[sub.plan] < PLAN_RANK[minPlan]) return false;
   return PLANS[sub.plan].allCourses || sub.courseId === courseId;
 }
 
@@ -40,24 +44,27 @@ export function findCoveringSubscription<T extends SubscriptionLike>(
   subs: T[],
   courseId: string,
   now: Date = new Date(),
+  minPlan: PlanId = "basic",
 ): T | null {
-  return subs.find((s) => isSubscriptionLive(s, now) && subscriptionCoversCourse(s, courseId)) ?? null;
+  return subs.find((s) => isSubscriptionLive(s, now) && subscriptionCoversCourse(s, courseId, minPlan)) ?? null;
 }
 
 export function canAccessLesson(params: {
   courseStatus: "published" | "soon";
   courseId: string;
+  /** Мінімальний тариф курсу (courses.min_plan_id). */
+  minPlan?: PlanId;
   lessonOrder: number;
   previousLessonCompleted: boolean;
   subscriptions: SubscriptionLike[];
   now?: Date;
 }): AccessReason {
-  const { courseStatus, courseId, lessonOrder, previousLessonCompleted, subscriptions, now } = params;
+  const { courseStatus, courseId, minPlan = "basic", lessonOrder, previousLessonCompleted, subscriptions, now } = params;
   if (courseStatus !== "published") return "coming_soon";
   // Крок за кроком: наступний урок відкривається лише після попереднього.
   if (lessonOrder > 1 && !previousLessonCompleted) return "locked_sequence";
   if (lessonOrder <= FREE_LESSONS) return "ok";
-  return findCoveringSubscription(subscriptions, courseId, now) ? "ok" : "needs_subscription";
+  return findCoveringSubscription(subscriptions, courseId, now, minPlan) ? "ok" : "needs_subscription";
 }
 
 /** Дата кінця наступного оплаченого періоду: +1 календарний місяць від max(зараз, поточний кінець). */

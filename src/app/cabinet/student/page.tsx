@@ -22,6 +22,7 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
   const state = o.currentCourse ? await getCourseState(o.currentCourse.slug, student.id) : null;
   const nextItem = state?.items.find((i) => !i.done) ?? null;
   const published = o.allCourses.filter((c) => c.status === "published");
+  const now = new Date();
 
   return (
     <CabinetShell nav={NAV} user={student} roleLabel="Учень">
@@ -146,11 +147,11 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
                 </span>
               </div>
               {h.status === "pending" ? (
-                <StatusBadge tone={h.dueAt < new Date() ? "bad" : "wait"}>{h.dueAt < new Date() ? "Прострочено" : "Чекає"}</StatusBadge>
+                <StatusBadge tone={h.dueAt && h.dueAt < now ? "bad" : "wait"}>{h.dueAt && h.dueAt < now ? "Прострочено" : "Чекає"}</StatusBadge>
               ) : h.status === "submitted" ? (
                 <StatusBadge tone="wait">На перевірці</StatusBadge>
               ) : (
-                <StatusBadge tone="good">{h.score != null ? `Перевірено · ${h.score}/10` : "Зараховано"}</StatusBadge>
+                <StatusBadge tone="good">{h.score != null ? `Перевірено · ${h.score}/${h.maxScore}` : "Зараховано"}</StatusBadge>
               )}
             </Link>
           ))}

@@ -1,23 +1,29 @@
 /**
- * Початкові дані: каталог курсів, демо-уроки та демо-акаунти.
+ * Початкові дані: тарифи, каталог курсів, демо-уроки та демо-акаунти.
  * Запуск: `npm run db:seed` (можна запускати повторно — дані оновлюються, а не дублюються).
  */
 import { config } from "dotenv";
 config({ path: ".env.local" });
+config();
 
 import bcrypt from "bcryptjs";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { and, eq } from "drizzle-orm";
-import { Pool } from "pg";
-import * as schema from "./schema";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient, type Prisma } from "../generated/prisma/client";
+import type { CourseCategory, LessonType, PlanCode, Role } from "../generated/prisma/enums";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const db = drizzle(pool, { schema });
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
+
+// Ціни в копійках. Змінити ціну потім можна прямо в базі (npm run db:studio) — seed її перезапише лише при повторному запуску.
+const PLAN_SEED: Array<{ code: PlanCode; name: string; price: number; rank: number }> = [
+  { code: "basic", name: "Простий", price: 24900, rank: 1 },
+  { code: "standard", name: "Середній", price: 44900, rank: 2 },
+  { code: "premium", name: "Преміум", price: 89900, rank: 3 },
+];
 
 type SeedCourse = {
   slug: string;
   title: string;
-  category: "start" | "web" | "design" | "code" | "mobile" | "games";
+  category: CourseCategory;
   ageFrom: number;
   ageTo: number;
   description: string;
@@ -48,7 +54,15 @@ const COURSES: SeedCourse[] = [
   { slug: "unity", title: "Unity", category: "games", ageFrom: 12, ageTo: 17, description: "Від ідеї до гри, в яку грають друзі." },
 ];
 
-type SeedLesson = { title: string; summary: string; content: string; homeworkPrompt?: string; xp?: number };
+type SeedLesson = {
+  title: string;
+  summary: string;
+  type?: LessonType; // за замовчуванням text
+  content: string; // Markdown
+  questions?: Array<{ q: string; options: string[]; answer: number }>; // для type: "quiz"
+  homeworkPrompt?: string;
+  xp?: number;
+};
 
 // Демо-уроки. Реальну програму курсів створюють викладачі — це приклад формату.
 const LESSONS: Record<string, SeedLesson[]> = {
@@ -144,6 +158,19 @@ print("Вгадав!")
 Обережно: якщо умова ніколи не стане хибною, цикл буде нескінченним.`,
       homeworkPrompt: "Зроби гру «Вгадай число»: комп'ютер підказує «більше» або «менше», доки гравець не вгадає.",
     },
+    {
+      title: "Перевір себе: основи Python",
+      summary: "Короткий тест за модулем.",
+      type: "quiz",
+      xp: 150,
+      content: "Ти пройшов перший модуль! Відповідай на питання — щоб пройти тест, потрібно 60% правильних відповідей.",
+      questions: [
+        { q: "Яка команда виводить текст на екран?", options: ["input()", "print()", "int()"], answer: 1 },
+        { q: "Що поверне input()?", options: ["Число", "Текст", "Нічого"], answer: 1 },
+        { q: "Скільки разів виконається тіло циклу for i in range(1, 6)?", options: ["5", "6", "1"], answer: 0 },
+        { q: "Що ставимо в кінці рядка з if?", options: ["Крапку з комою", "Двокрапку", "Нічого"], answer: 1 },
+      ],
+    },
   ],
   "html-css-js": [
     {
@@ -190,79 +217,71 @@ h1 {
 };
 
 async function main() {
-  console.log("Сідування курсів…");
+  console.log("Тарифи…");
+  for (const p of PLAN_SEED) {
+    await prisma.plan.upsert({
+      where: { code: p.code },
+      update: { name: p.name, price: p.price, rank: p.rank },
+      create: { ...p, period: "month" },
+    });
+  }
+  const basic = await prisma.plan.findUniqueOrThrow({ where: { code: "basic" } });
+
+  console.log("Курси…");
   for (const [i, c] of COURSES.entries()) {
     const status = LESSONS[c.slug] ? "published" : "soon";
-    await db
-      .insert(schema.courses)
-      .values({ ...c, status, sortOrder: i })
-      .onConflictDoUpdate({
-        target: schema.courses.slug,
-        set: { title: c.title, category: c.category, ageFrom: c.ageFrom, ageTo: c.ageTo, description: c.description, status, sortOrder: i },
-      });
+    const data = { ...c, status, sortOrder: i } as const;
+    await prisma.course.upsert({
+      where: { slug: c.slug },
+      update: data,
+      create: { ...data, minPlanId: basic.id },
+    });
   }
 
+  console.log("Уроки й домашки…");
   for (const [slug, lessons] of Object.entries(LESSONS)) {
-    const [course] = await db.select().from(schema.courses).where(eq(schema.courses.slug, slug));
+    const course = await prisma.course.findUniqueOrThrow({ where: { slug } });
     for (const [i, l] of lessons.entries()) {
-      const values = {
-        courseId: course.id,
-        order: i + 1,
-        title: l.title,
-        summary: l.summary,
-        content: l.content,
-        xp: l.xp ?? 100,
-        homeworkPrompt: l.homeworkPrompt ?? null,
-      };
-      const [existing] = await db
-        .select()
-        .from(schema.lessons)
-        .where(and(eq(schema.lessons.courseId, course.id), eq(schema.lessons.order, i + 1)));
-      if (existing) await db.update(schema.lessons).set(values).where(eq(schema.lessons.id, existing.id));
-      else await db.insert(schema.lessons).values(values);
+      const type = l.type ?? "text";
+      const content: Prisma.InputJsonValue = type === "quiz" ? { markdown: l.content, questions: l.questions ?? [] } : { markdown: l.content };
+      const data = { type, title: l.title, summary: l.summary, xp: l.xp ?? 100, content };
+      const lesson = await prisma.lesson.upsert({
+        where: { courseId_order: { courseId: course.id, order: i + 1 } },
+        update: data,
+        create: { ...data, courseId: course.id, order: i + 1 },
+      });
+      if (l.homeworkPrompt) {
+        await prisma.homework.upsert({
+          where: { lessonId: lesson.id },
+          update: { task: l.homeworkPrompt },
+          create: { lessonId: lesson.id, task: l.homeworkPrompt },
+        });
+      }
     }
   }
 
   console.log("Демо-акаунти…");
-  const upsertUser = async (u: typeof schema.users.$inferInsert) => {
-    const [row] = await db
-      .insert(schema.users)
-      .values(u)
-      .onConflictDoUpdate({ target: schema.users.login, set: { name: u.name, passwordHash: u.passwordHash } })
-      .returning();
-    return row;
-  };
   const hash = (p: string) => bcrypt.hash(p, 10);
+  const upsertUser = async (u: { role: Role; login: string; email?: string; name: string; password: string; birthYear?: number; parentId?: string }) => {
+    const { password, ...rest } = u;
+    const passwordHash = await hash(password);
+    return prisma.user.upsert({
+      where: { login: u.login },
+      update: { name: u.name, passwordHash },
+      create: { ...rest, passwordHash },
+    });
+  };
 
-  const parent = await upsertUser({
-    role: "parent",
-    login: "demo@itcodecraft.test",
-    email: "demo@itcodecraft.test",
-    name: "Олена",
-    passwordHash: await hash("demo12345"),
-  });
-  await upsertUser({
-    role: "student",
-    login: "maks",
-    name: "Макс",
-    birthYear: new Date().getFullYear() - 12,
-    parentId: parent.id,
-    passwordHash: await hash("maks12345"),
-  });
-  await upsertUser({
-    role: "teacher",
-    login: "teacher@itcodecraft.test",
-    email: "teacher@itcodecraft.test",
-    name: "Викладач",
-    passwordHash: await hash("teacher12345"),
-  });
+  const parent = await upsertUser({ role: "parent", login: "demo@itcodecraft.test", email: "demo@itcodecraft.test", name: "Олена", password: "demo12345" });
+  await upsertUser({ role: "student", login: "maks", name: "Макс", birthYear: new Date().getFullYear() - 12, parentId: parent.id, password: "maks12345" });
+  await upsertUser({ role: "teacher", login: "teacher@itcodecraft.test", email: "teacher@itcodecraft.test", name: "Викладач", password: "teacher12345" });
 
   console.log("Готово ✔");
-  await pool.end();
 }
 
-main().catch(async (e) => {
-  console.error(e);
-  await pool.end();
-  process.exit(1);
-});
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exitCode = 1;
+  })
+  .finally(() => prisma.$disconnect());

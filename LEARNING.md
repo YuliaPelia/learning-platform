@@ -6,11 +6,11 @@
 | --- | --- | --- |
 | 1. HTML + CSS | `src/app/page.tsx` (розмітка), `src/app/globals.css` (кольори й класи) | Змінити колір акценту `--color-accent`, текст заголовка |
 | 2. JavaScript | `src/lib/gamification.ts`, `src/lib/access.ts` | Додати новий бейдж у `computeBadges` |
-| 2+. TypeScript | типи в `src/lib/plans.ts`, `src/db/schema.ts` | Додати поле в тип `Plan` і подивитись, де TypeScript підкаже помилки |
+| 2+. TypeScript | типи в `src/lib/plans.ts`, `prisma/schema.prisma` (з неї генеруються типи) | Додати поле в тип `Plan` і подивитись, де TypeScript підкаже помилки |
 | 3. React | `src/components/course-catalog.tsx` (`useState`), `pricing-client.tsx` | Додати фільтр «Мобільні» |
 | 3+. Next.js | папки в `src/app` = адреси сторінок; `"use server"` у `src/actions` | Створити сторінку `/about` |
 | 4. Node.js / бекенд | `src/actions/*`, `src/app/api/*/route.ts`, `src/lib/wayforpay.ts` | Написати тест на новий випадок у `src/lib/__tests__` |
-| 5. PostgreSQL | `src/db/schema.ts`, `npm run db:studio` | Додати колонку `avatar` в `users`, виконати `npm run db:push` |
+| 5. PostgreSQL + Prisma | `prisma/schema.prisma`, `prisma/migrations`, `npm run db:studio` | Додати поле `avatar` у модель `User`, виконати `npm run db:migrate` і подивитись на згенерований SQL |
 | 6. Git + GitHub | уся історія змін | Кожну зміну — окремим комітом з поясненням |
 | 7. Docker + деплой | README → «Деплой» | Задеплоїти на Vercel |
 

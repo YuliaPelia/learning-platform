@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { canAccessLesson, extendPeriod, isSubscriptionLive, type SubscriptionLike } from "../access";
+import { formatUah } from "../format";
 import { computeBadges, levelFromXp, streakDays } from "../gamification";
+import { gradeQuiz, parseLessonContent } from "../lesson-content";
 import {
   acceptResponse,
   buildPurchaseFields,
@@ -47,6 +49,14 @@ describe("доступ до уроків", () => {
 
   it("Преміум відкриває всі курси", () => {
     expect(canAccessLesson({ ...base, courseId: "unity", lessonOrder: 5, subscriptions: [sub({ plan: "premium", courseId: null })] })).toBe("ok");
+  });
+
+  it("курс-новинка з мінімальним тарифом Преміум не відкривається нижчим тарифом", () => {
+    const premiumOnly = { ...base, minPlan: "premium" as const, lessonOrder: 3 };
+    expect(canAccessLesson({ ...premiumOnly, subscriptions: [sub()] })).toBe("needs_subscription");
+    expect(canAccessLesson({ ...premiumOnly, subscriptions: [sub({ plan: "premium", courseId: null })] })).toBe("ok");
+    // безкоштовні уроки доступні всім
+    expect(canAccessLesson({ ...premiumOnly, lessonOrder: 1 })).toBe("ok");
   });
 
   it("скасована підписка діє до кінця місяця, прострочена — 3 дні пільги", () => {
@@ -167,5 +177,31 @@ describe("WayForPay", () => {
 
   it("формат дати", () => {
     expect(wfpDate(new Date(2026, 0, 5))).toBe("05.01.2026");
+  });
+});
+
+describe("уроки й тести", () => {
+  it("розбирає контент уроку за типом і відкидає некоректні питання", () => {
+    expect(parseLessonContent("text", { markdown: "# Привіт" })).toEqual({ markdown: "# Привіт", videoUrl: null, questions: [] });
+    expect(parseLessonContent("video", { url: "https://v/1.mp4" }).videoUrl).toBe("https://v/1.mp4");
+    const quiz = parseLessonContent("quiz", {
+      questions: [{ q: "2+2?", options: ["3", "4"], answer: 1 }, { q: "зламане питання" }],
+    });
+    expect(quiz.questions).toHaveLength(1);
+    expect(parseLessonContent("text", null)).toEqual({ markdown: "", videoUrl: null, questions: [] });
+  });
+
+  it("тест зараховується від 60% правильних відповідей", () => {
+    const qs = [0, 1, 2, 0, 1].map((answer) => ({ q: "?", options: ["a", "b", "c"], answer }));
+    expect(gradeQuiz(qs, [0, 1, 2, 2, 2])).toEqual({ correct: 3, total: 5, passed: true });
+    expect(gradeQuiz(qs, [0, 1, 0, 2, 2])).toEqual({ correct: 2, total: 5, passed: false });
+    expect(gradeQuiz(qs, [-1, -1, -1, -1, -1]).passed).toBe(false);
+  });
+});
+
+describe("гроші", () => {
+  it("копійки → гривні", () => {
+    expect(formatUah(44900).replace(/\s/g, " ")).toBe("449 грн");
+    expect(formatUah(44950).replace(/\s/g, " ")).toBe("449,50 грн");
   });
 });

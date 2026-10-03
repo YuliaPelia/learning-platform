@@ -1,14 +1,13 @@
 /**
- * Тарифи — ЄДИНЕ місце, де описано ціни й можливості.
- * Сторінка тарифів, оплата і перевірка доступу беруть дані звідси,
- * тож щоб змінити ціну, достатньо змінити одне число.
+ * Тарифи. Назва і ціна живуть у базі (таблиця plans) — їх можна змінити без деплою.
+ * Тут — те, що тариф ДАЄ: ці правила використовує код (доступ, бейджі, викладач).
  */
-export type PlanId = "basic" | "standard" | "premium";
+import type { PlanCode } from "@/generated/prisma/enums";
 
-export type Plan = {
+export type PlanId = PlanCode;
+
+export type PlanFeatures = {
   id: PlanId;
-  name: string;
-  price: number; // грн на місяць
   description: string;
   allCourses: boolean; // Преміум — усі курси
   support: boolean; // чат підтримки
@@ -17,11 +16,15 @@ export type Plan = {
   popular?: boolean;
 };
 
-export const PLANS: Record<PlanId, Plan> = {
+/** Тариф для показу: можливості + назва й ціна з бази. */
+export type Plan = PlanFeatures & {
+  name: string;
+  price: number; // грн на місяць
+};
+
+export const PLANS: Record<PlanId, PlanFeatures> = {
   basic: {
     id: "basic",
-    name: "Простий",
-    price: 249,
     description: "Один курс для самостійного навчання",
     allCourses: false,
     support: false,
@@ -30,8 +33,6 @@ export const PLANS: Record<PlanId, Plan> = {
   },
   standard: {
     id: "standard",
-    name: "Середній",
-    price: 449,
     description: "Один курс з підтримкою та ігровою мотивацією",
     allCourses: false,
     support: true,
@@ -41,8 +42,6 @@ export const PLANS: Record<PlanId, Plan> = {
   },
   premium: {
     id: "premium",
-    name: "Преміум",
-    price: 899,
     description: "Усі курси та особистий викладач",
     allCourses: true,
     support: true,
@@ -51,7 +50,8 @@ export const PLANS: Record<PlanId, Plan> = {
   },
 };
 
-export const PLAN_LIST: Plan[] = [PLANS.basic, PLANS.standard, PLANS.premium];
+/** Порядок тарифів (збігається з plans.rank у базі): чим більше, тим ширший доступ. */
+export const PLAN_RANK: Record<PlanId, number> = { basic: 1, standard: 2, premium: 3 };
 
 /** Скільки перших уроків кожного курсу доступні безкоштовно. */
 export const FREE_LESSONS = 2;

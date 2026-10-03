@@ -1,10 +1,9 @@
 "use server";
 
-import bcrypt from "bcryptjs";
-import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { db, schema } from "@/db";
+import { prisma } from "@/db";
 import { requireUser } from "@/lib/dal";
+import { hashPassword } from "@/lib/password";
 import { LEGAL_VERSION } from "@/lib/plans";
 import { requestMeta } from "@/lib/request";
 import { ChildSchema, firstError, keepValues, type FormState } from "@/lib/validation";
@@ -16,18 +15,19 @@ export async function addChild(_prev: FormState, formData: FormData): Promise<Fo
   if (!parsed.success) return { error: firstError(parsed.error), values: keepValues(formData) };
   const { name, birthYear, login, password } = parsed.data;
 
-  const [taken] = await db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.login, login));
+  const taken = await prisma.user.findUnique({ where: { login }, select: { id: true } });
   if (taken) return { error: "Такий логін уже зайнятий — спробуйте інший", values: keepValues(formData) };
 
-  const [child] = await db
-    .insert(schema.users)
-    .values({ role: "student", login, name, birthYear, parentId: parent.id, passwordHash: await bcrypt.hash(password, 10) })
-    .returning();
-
   const meta = await requestMeta();
-  await db
-    .insert(schema.consents)
-    .values({ userId: parent.id, type: "child_data", documentVersion: LEGAL_VERSION, subjectId: child.id, ...meta });
+  // Профіль дитини і згода батьків на обробку її даних — одна транзакція
+  await prisma.$transaction(async (tx) => {
+    const child = await tx.user.create({
+      data: { role: "student", login, name, birthYear, parentId: parent.id, passwordHash: await hashPassword(password) },
+    });
+    await tx.consent.create({
+      data: { parentId: parent.id, childId: child.id, type: "child_data", documentVersion: LEGAL_VERSION, ...meta },
+    });
+  });
 
   revalidatePath("/cabinet/parent");
   return { ok: true };
@@ -35,27 +35,23 @@ export async function addChild(_prev: FormState, formData: FormData): Promise<Fo
 
 /**
  * Видалення профілю дитини на вимогу батьків (право на видалення персональних даних).
- * Прогрес і домашки видаляються каскадно; платежі залишаються (бухгалтерський облік),
+ * Прогрес і домашки видаляються каскадно; платежі й згоди залишаються (облік і доказ),
  * але більше не пов'язані з дитиною. Діючі регулярні списання скасовуються.
  */
 export async function deleteChild(formData: FormData) {
   const parent = await requireUser("parent");
   const childId = String(formData.get("childId") ?? "");
-  const [child] = await db
-    .select()
-    .from(schema.users)
-    .where(and(eq(schema.users.id, childId), eq(schema.users.parentId, parent.id)));
+  const child = await prisma.user.findFirst({ where: { id: childId, parentId: parent.id } });
   if (!child) return;
 
-  const subs = await db
-    .select()
-    .from(schema.subscriptions)
-    .where(and(eq(schema.subscriptions.studentId, child.id), inArray(schema.subscriptions.status, ["active", "past_due"])));
+  const subs = await prisma.subscription.findMany({
+    where: { studentId: child.id, status: { in: ["active", "past_due"] } },
+  });
   const cfg = getWfpConfig();
   for (const s of subs) {
     if (cfg) await removeRegularPayment(cfg, s.orderReference).catch(() => false);
-    await db.update(schema.subscriptions).set({ status: "canceled", canceledAt: new Date() }).where(eq(schema.subscriptions.id, s.id));
+    await prisma.subscription.update({ where: { id: s.id }, data: { status: "canceled", canceledAt: new Date() } });
   }
-  await db.delete(schema.users).where(eq(schema.users.id, child.id));
+  await prisma.user.delete({ where: { id: child.id } });
   revalidatePath("/cabinet/parent");
 }

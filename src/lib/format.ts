@@ -30,3 +30,15 @@ export const SUBSCRIPTION_STATUS_LABELS: Record<string, string> = {
   past_due: "Проблема з оплатою",
   canceled: "Скасована",
 };
+
+/** Суми в базі зберігаються в копійках: 44900 → "449 грн", 44950 → "449,50 грн". */
+export function formatUah(kopecks: number) {
+  return `${new Intl.NumberFormat("uk-UA", { minimumFractionDigits: kopecks % 100 ? 2 : 0, maximumFractionDigits: 2 }).format(kopecks / 100)} грн`;
+}
+
+export const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  pending: "В обробці",
+  approved: "Успішно",
+  declined: "Відхилено",
+  refunded: "Повернено",
+};

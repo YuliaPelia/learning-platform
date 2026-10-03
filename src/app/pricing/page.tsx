@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { asc, eq } from "drizzle-orm";
-import { db, schema } from "@/db";
+import { prisma } from "@/db";
 import { IconGift } from "@/components/icons";
 import { PricingClient } from "@/components/pricing-client";
 import { PublicShell } from "@/components/site-chrome";
 import { getChildren, getCurrentUser } from "@/lib/dal";
-import { PLAN_FEATURES, PLAN_LIST, isPlanId } from "@/lib/plans";
+import { getPlanCatalog } from "@/lib/learning";
+import { PLAN_FEATURES, isPlanId } from "@/lib/plans";
 
 export const metadata: Metadata = { title: "Тарифи" };
 
@@ -22,11 +22,10 @@ export default async function PricingPage({ searchParams }: PageProps<"/pricing"
   const user = await getCurrentUser();
   const viewer = !user ? "guest" : user.role === "parent" ? "parent" : "other";
   const kids = user?.role === "parent" ? await getChildren(user.id) : [];
-  const courses = await db
-    .select({ id: schema.courses.id, title: schema.courses.title })
-    .from(schema.courses)
-    .where(eq(schema.courses.status, "published"))
-    .orderBy(asc(schema.courses.sortOrder));
+  const [courses, plans] = await Promise.all([
+    prisma.course.findMany({ where: { status: "published" }, select: { id: true, title: true }, orderBy: { sortOrder: "asc" } }),
+    getPlanCatalog(),
+  ]);
 
   return (
     <PublicShell>
@@ -41,7 +40,7 @@ export default async function PricingPage({ searchParams }: PageProps<"/pricing"
         </section>
 
         <PricingClient
-          plans={PLAN_LIST}
+          plans={plans}
           features={PLAN_FEATURES}
           initialPlan={initialPlan}
           viewer={viewer}
