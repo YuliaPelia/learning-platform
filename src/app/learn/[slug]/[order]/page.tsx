@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { and, eq } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
-import { db, schema } from "@/db";
-import { completeLesson, requestUnlock, submitHomework } from "@/actions/learning";
+import { prisma } from "@/db";
+import { completeLesson, requestUnlock, submitHomework, submitQuiz } from "@/actions/learning";
 import { StatusBadge } from "@/components/cabinet-shell";
 import { IconArrow, IconCheck, IconLock } from "@/components/icons";
 import { Logo } from "@/components/site-chrome";
 import { requireUser } from "@/lib/dal";
 import { formatShortDate } from "@/lib/format";
 import { getCourseState } from "@/lib/learning";
+import { QUIZ_PASS_RATIO, parseLessonContent } from "@/lib/lesson-content";
 import { Markdown } from "@/lib/markdown";
 
 export const metadata: Metadata = { title: "Урок" };
@@ -26,12 +26,13 @@ export default async function LessonPage({ params, searchParams }: PageProps<"/l
   if (idx === -1) notFound();
   const { lesson, done, access } = state.items[idx];
 
-  const [hw] = lesson.homeworkPrompt
-    ? await db
-        .select()
-        .from(schema.homework)
-        .where(and(eq(schema.homework.studentId, user.id), eq(schema.homework.lessonId, lesson.id)))
-    : [];
+  const task = lesson.homework;
+  const hw = task
+    ? await prisma.submission.findUnique({ where: { homeworkId_userId: { homeworkId: task.id, userId: user.id } } })
+    : null;
+  const content = parseLessonContent(lesson.type, lesson.content);
+  // ?quiz=2-3 — результат невдалої спроби тесту (правильних-усього)
+  const quizResult = typeof sp.quiz === "string" ? sp.quiz.split("-").map(Number) : null;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -84,14 +85,49 @@ export default async function LessonPage({ params, searchParams }: PageProps<"/l
 
           {access === "ok" ? (
             <>
-              {lesson.videoUrl && (
+              {content.videoUrl && (
                 <div className="aspect-video overflow-hidden rounded-3xl bg-surface">
-                  <iframe src={lesson.videoUrl} title={lesson.title} className="h-full w-full" allowFullScreen />
+                  {/\.(mp4|webm)(\?|$)/i.test(content.videoUrl) ? (
+                    <video src={content.videoUrl} controls controlsList="nodownload" className="h-full w-full" />
+                  ) : (
+                    <iframe src={content.videoUrl} title={lesson.title} className="h-full w-full" allowFullScreen />
+                  )}
                 </div>
               )}
-              <Markdown source={lesson.content} />
+              {content.markdown && <Markdown source={content.markdown} />}
 
-              {lesson.homeworkPrompt && (
+              {lesson.type === "quiz" && (
+                <form action={submitQuiz} className="card flex flex-col gap-6 p-7">
+                  <input type="hidden" name="lessonId" value={lesson.id} />
+                  <div className="flex flex-col gap-1">
+                    <h2 className="text-xl font-bold">Тест</h2>
+                    <p className="text-sm text-muted">
+                      Щоб пройти, потрібно щонайменше {Math.round(QUIZ_PASS_RATIO * 100)}% правильних відповідей.
+                    </p>
+                  </div>
+                  {quizResult && !done && (
+                    <p className="font-semibold text-amber">
+                      Правильних відповідей: {quizResult[0]} з {quizResult[1]}. Спробуй ще раз!
+                    </p>
+                  )}
+                  {content.questions.map((q, qi) => (
+                    <fieldset key={qi} className="flex flex-col gap-2.5">
+                      <legend className="mb-2 font-semibold">
+                        {qi + 1}. {q.q}
+                      </legend>
+                      {q.options.map((opt, oi) => (
+                        <label key={oi} className="flex cursor-pointer items-center gap-3 rounded-xl bg-ink px-4 py-3 hover:bg-[#141835]">
+                          <input type="radio" name={`q${qi}`} value={oi} required className="accent-[var(--color-accent)]" />
+                          <span>{opt}</span>
+                        </label>
+                      ))}
+                    </fieldset>
+                  ))}
+                  <button className="btn-primary self-start">{done ? "Пройти тест ще раз" : "Перевірити відповіді"}</button>
+                </form>
+              )}
+
+              {task && (
                 <section id="homework" className="card flex flex-col gap-4 p-7">
                   <div className="flex items-center justify-between gap-4">
                     <h2 className="text-xl font-bold">Домашнє завдання</h2>
@@ -101,10 +137,10 @@ export default async function LessonPage({ params, searchParams }: PageProps<"/l
                       ) : hw.status === "submitted" ? (
                         <StatusBadge tone="wait">На перевірці у викладача</StatusBadge>
                       ) : (
-                        <StatusBadge tone="good">{hw.score != null ? `Оцінка ${hw.score}/10` : "Зараховано"}</StatusBadge>
+                        <StatusBadge tone="good">{hw.score != null ? `Оцінка ${hw.score}/${task.maxScore}` : "Зараховано"}</StatusBadge>
                       ))}
                   </div>
-                  <p className="leading-relaxed text-soft">{lesson.homeworkPrompt}</p>
+                  <p className="leading-relaxed text-soft">{task.task}</p>
                   {!hw ? (
                     <p className="text-muted">Домашка відкриється, коли ти позначиш урок пройденим.</p>
                   ) : hw.status === "pending" ? (
@@ -123,6 +159,7 @@ export default async function LessonPage({ params, searchParams }: PageProps<"/l
                 </section>
               )}
 
+              {(lesson.type !== "quiz" || done) && (
               <form action={completeLesson} className="flex flex-wrap items-center gap-4 border-t border-line pt-6">
                 <input type="hidden" name="lessonId" value={lesson.id} />
                 {done ? (
@@ -142,6 +179,7 @@ export default async function LessonPage({ params, searchParams }: PageProps<"/l
                   </button>
                 )}
               </form>
+              )}
             </>
           ) : (
             <div className="card flex flex-col items-start gap-4 p-8">

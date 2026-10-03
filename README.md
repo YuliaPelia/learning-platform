@@ -2,7 +2,7 @@
 
 Онлайн-платформа IT-курсів для дітей 9–17 років: уроки крок за кроком, 2 безкоштовні уроки, домашки з нагадуваннями, рівні й бейджі, кабінети дитини та батьків, оплата підписки через WayForPay.
 
-**Стек:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · PostgreSQL · Drizzle ORM · сесії на JWT (jose) · Vitest.
+**Стек:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · PostgreSQL · Prisma ORM 7 · сесії на JWT (jose) · Vitest.
 
 ---
 
@@ -16,9 +16,9 @@
 ### 2. База даних
 Найпростіше — Docker:
 ```bash
-docker run --name itc-db -e POSTGRES_USER=itc -e POSTGRES_PASSWORD=itc -e POSTGRES_DB=itcodecraft -p 5432:5432 -d postgres:16
+docker run --name itc-db -e POSTGRES_USER=itc -e POSTGRES_PASSWORD=itc -e POSTGRES_DB=itc_prisma -p 5432:5432 -d postgres:16
 ```
-Або в уже встановленому PostgreSQL створи користувача `itc` з паролем `itc` і базу `itcodecraft`.
+Або в уже встановленому PostgreSQL створи користувача `itc` з паролем `itc` і базу `itc_prisma`.
 
 ### 3. Проєкт
 ```bash
@@ -32,8 +32,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ### 4. Таблиці та демо-дані
 ```bash
-npm run db:push    # створює таблиці за схемою src/db/schema.ts
-npm run db:seed    # 22 курси, демо-уроки Python і HTML/CSS/JS, демо-акаунти
+npm run db:deploy  # застосовує міграції з prisma/migrations
+npm run db:seed    # тарифи, 22 курси, демо-уроки Python (з тестом) і HTML/CSS/JS, демо-акаунти
 ```
 
 ### 5. Старт
@@ -60,14 +60,20 @@ npm run dev
 | `npm run build` / `npm start` | продакшен-збірка і запуск |
 | `npm test` | юніт-тести (доступ, рівні, підписи WayForPay) |
 | `npm run lint` · `npm run typecheck` | перевірка коду |
-| `npm run db:push` | застосувати зміни схеми до бази |
-| `npm run db:seed` | заповнити курси й демо-акаунти |
+| `npm run db:migrate` | змінив `prisma/schema.prisma` → створити й застосувати нову міграцію |
+| `npm run db:deploy` | застосувати наявні міграції (сервер, CI, нова машина) |
+| `npm run db:generate` | перегенерувати Prisma Client (запускається й сам після `npm install`) |
+| `npm run db:seed` | заповнити тарифи, курси й демо-акаунти |
 | `npm run db:studio` | переглядати базу в браузері |
 
 ---
 
 ## Структура
 ```
+prisma/
+  schema.prisma           СХЕМА БАЗИ — 10 таблиць (див. коментарі в файлі)
+  migrations/             історія змін схеми (SQL)
+prisma.config.ts          налаштування Prisma CLI (читає .env.local)
 src/
   app/                    сторінки (кожна папка = адреса сайту)
     page.tsx              головна
@@ -84,9 +90,11 @@ src/
     api/payments/wayforpay/return    ← returnUrl (повернення батьків)
     api/cron/daily        нагадування та закриття прострочених підписок
   actions/                серверні дії (форми): auth, children, learning, checkout, teacher
-  db/                     схема бази, підключення, seed
+  db/                     підключення Prisma (index.ts) і seed
+  generated/prisma/       Prisma Client (генерується, не в git)
   lib/
-    plans.ts              ТАРИФИ І ЦІНИ — міняти тут
+    plans.ts              що дає кожен тариф (ціни й назви — у таблиці plans)
+    lesson-content.ts     контент уроку (текст / відео / тест) з JSON
     access.ts             правила доступу (2 безкоштовні уроки, підписки)
     wayforpay.ts          підписи та форма WayForPay
     billing.ts            обробка платежів
@@ -114,14 +122,14 @@ src/
 1. Залий код на GitHub.
 2. Створи базу PostgreSQL на [Neon](https://neon.tech) або [Supabase](https://supabase.com), скопіюй рядок підключення.
 3. Імпортуй репозиторій у [Vercel](https://vercel.com), додай усі змінні з `.env.example` (з реальними значеннями).
-4. Локально з `DATABASE_URL` бойової бази: `npm run db:push && npm run db:seed` (демо-акаунти потім видали або зміни паролі!).
+4. Локально з `DATABASE_URL` бойової бази: `npm run db:deploy && npm run db:seed` (демо-акаунти потім видали або зміни паролі!).
 5. `vercel.json` уже запускає `/api/cron/daily` щодня о 07:00 UTC — Vercel сам підставить `CRON_SECRET`.
 
 ---
 
 ## Перед запуском з реальними клієнтами
 - [ ] Юрист перевіряє тексти в `src/content/legal.ts`; заповнити реквізити в квадратних дужках (і у футері `src/components/site-chrome.tsx`)
-- [ ] Змінити ціни в `src/lib/plans.ts`, якщо потрібно
+- [ ] Змінити ціни в таблиці `plans` (`npm run db:studio`) і в `PLAN_SEED` у `src/db/seed.ts`, якщо потрібно
 - [ ] Видалити/змінити демо-акаунти
 - [ ] Підключити Resend (або інший сервіс листів) і домен відправника
 - [ ] Бойовий тест оплати, скасування, повернення

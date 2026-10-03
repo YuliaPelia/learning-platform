@@ -1,17 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { desc, eq, inArray } from "drizzle-orm";
-import { db, schema } from "@/db";
+import { prisma } from "@/db";
 import { cancelSubscription } from "@/actions/checkout";
 import { deleteChild } from "@/actions/children";
 import { AddChildForm } from "@/components/add-child-form";
 import { CabinetShell, Notice, StatusBadge } from "@/components/cabinet-shell";
 import { isSubscriptionLive } from "@/lib/access";
 import { getChildren, requireUser } from "@/lib/dal";
-import { SUBSCRIPTION_STATUS_LABELS, formatDate, formatShortDate } from "@/lib/format";
-import { getStudentOverview } from "@/lib/learning";
+import { PAYMENT_STATUS_LABELS, SUBSCRIPTION_STATUS_LABELS, formatDate, formatShortDate, formatUah } from "@/lib/format";
+import { getStudentOverview, toAccessSub } from "@/lib/learning";
 import { isStalePending } from "@/lib/billing";
-import { PLANS } from "@/lib/plans";
 
 export const metadata: Metadata = { title: "Кабінет батьків" };
 
@@ -36,21 +34,21 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
   const kids = await getChildren(parent.id);
   const overviews = await Promise.all(kids.map((k) => getStudentOverview(k.id)));
 
-  const subs = await db
-    .select({ sub: schema.subscriptions, courseTitle: schema.courses.title, childName: schema.users.name })
-    .from(schema.subscriptions)
-    .leftJoin(schema.courses, eq(schema.courses.id, schema.subscriptions.courseId))
-    .leftJoin(schema.users, eq(schema.users.id, schema.subscriptions.studentId))
-    .where(eq(schema.subscriptions.parentId, parent.id))
-    .orderBy(desc(schema.subscriptions.createdAt));
+  const subs = await prisma.subscription.findMany({
+    where: { userId: parent.id },
+    include: { plan: true, course: { select: { title: true } }, student: { select: { name: true } } },
+    orderBy: { createdAt: "desc" },
+  });
   // Незавершені замовлення старші за добу не показуємо — це просто закриті вкладки оплати
-  const visibleSubs = subs.filter((s) => !isStalePending(s.sub));
+  const visibleSubs = subs.filter((s) => !isStalePending(s));
 
-  const subIds = subs.map((s) => s.sub.id);
-  const payments = subIds.length
-    ? await db.select().from(schema.payments).where(inArray(schema.payments.subscriptionId, subIds)).orderBy(desc(schema.payments.createdAt)).limit(20)
-    : [];
-  const consents = await db.select().from(schema.consents).where(eq(schema.consents.userId, parent.id)).orderBy(desc(schema.consents.createdAt));
+  const payments = await prisma.payment.findMany({
+    where: { subscription: { userId: parent.id } },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  });
+  const consents = await prisma.consent.findMany({ where: { parentId: parent.id }, orderBy: { acceptedAt: "desc" } });
+  const now = new Date();
 
   return (
     <CabinetShell nav={NAV} user={parent} roleLabel="Батьки">
@@ -97,13 +95,13 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
                       {h.courseTitle} · урок {h.lessonOrder}: {h.lessonTitle}
                     </span>
                     {h.status === "pending" ? (
-                      <StatusBadge tone={h.dueAt < new Date() ? "bad" : "wait"}>
-                        {h.dueAt < new Date() ? "Прострочено" : `До ${formatShortDate(h.dueAt)}`}
+                      <StatusBadge tone={h.dueAt && h.dueAt < now ? "bad" : "wait"}>
+                        {h.dueAt && h.dueAt < now ? "Прострочено" : `До ${formatShortDate(h.dueAt)}`}
                       </StatusBadge>
                     ) : h.status === "submitted" ? (
                       <StatusBadge tone="wait">На перевірці</StatusBadge>
                     ) : (
-                      <StatusBadge tone="good">{h.score != null ? `${h.score}/10` : "Зараховано"}</StatusBadge>
+                      <StatusBadge tone="good">{h.score != null ? `${h.score}/${h.maxScore}` : "Зараховано"}</StatusBadge>
                     )}
                   </div>
                   {h.teacherComment && <p className="text-sm leading-relaxed text-muted">Викладач: «{h.teacherComment}»</p>}
@@ -120,23 +118,23 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
           <Link href="/pricing" className="text-accent underline">Оформити або змінити тариф</Link>
         </div>
         {visibleSubs.length === 0 && <p className="text-muted">Підписок ще немає. Перші 2 уроки кожного курсу — безкоштовно.</p>}
-        {visibleSubs.map(({ sub, courseTitle, childName }) => {
-          const live = isSubscriptionLive(sub);
+        {visibleSubs.map((sub) => {
+          const live = isSubscriptionLive(toAccessSub(sub));
           return (
             <div key={sub.id} className="flex flex-col gap-3 rounded-2xl bg-ink px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-col gap-1">
                 <span className="font-semibold">
-                  {PLANS[sub.plan].name} · {sub.amount} грн/міс · {childName ?? "профіль видалено"}
-                  {courseTitle ? ` · ${courseTitle}` : " · усі курси"}
+                  {sub.plan.name} · {formatUah(sub.amount)}/міс · {sub.student?.name ?? "профіль видалено"}
+                  {sub.course ? ` · ${sub.course.title}` : " · усі курси"}
                 </span>
                 <span className="text-sm text-muted">
                   {sub.status === "canceled"
                     ? live
-                      ? `Скасовано — доступ до ${formatDate(sub.currentPeriodEnd)}`
+                      ? `Скасовано — доступ до ${formatDate(sub.endsAt)}`
                       : "Скасовано"
                     : sub.status === "pending"
                       ? "Очікує оплату"
-                      : `Наступне списання: ${formatDate(sub.currentPeriodEnd)}`}
+                      : `Наступне списання: ${formatDate(sub.endsAt)}`}
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -171,10 +169,10 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
               <tbody>
                 {payments.map((p) => (
                   <tr key={p.id} className="border-t border-line">
-                    <td className="py-2">{formatDate(p.createdAt)}</td>
-                    <td className="py-2 font-mono">{p.orderReference}</td>
-                    <td className="py-2">{p.amount} {p.currency}</td>
-                    <td className="py-2">{p.transactionStatus === "Approved" ? "Успішно" : p.transactionStatus}</td>
+                    <td className="py-2">{formatDate(p.paidAt ?? p.createdAt)}</td>
+                    <td className="py-2 font-mono">{p.orderId}</td>
+                    <td className="py-2">{p.currency === "UAH" ? formatUah(p.amount) : `${p.amount / 100} ${p.currency}`}</td>
+                    <td className="py-2">{PAYMENT_STATUS_LABELS[p.status]}</td>
                   </tr>
                 ))}
               </tbody>
@@ -199,7 +197,7 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
         <ul className="flex flex-col gap-1.5 text-sm text-soft">
           {consents.map((c) => (
             <li key={c.id}>
-              {formatDate(c.createdAt)} — {CONSENT_LABELS[c.type]} (версія {c.documentVersion})
+              {formatDate(c.acceptedAt)} — {CONSENT_LABELS[c.type]} (версія {c.documentVersion})
             </li>
           ))}
         </ul>

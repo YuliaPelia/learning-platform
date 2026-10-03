@@ -1,8 +1,8 @@
 import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
-import { db, schema } from "@/db";
+import { prisma } from "@/db";
+import type { Role } from "@/generated/prisma/enums";
 import { readSession } from "./session";
 
 /**
@@ -13,11 +13,8 @@ import { readSession } from "./session";
 export const getCurrentUser = cache(async () => {
   const session = await readSession();
   if (!session) return null;
-  const [user] = await db.select().from(schema.users).where(eq(schema.users.id, session.userId));
-  return user ?? null;
+  return prisma.user.findUnique({ where: { id: session.userId } });
 });
-
-type Role = "parent" | "student" | "teacher" | "admin";
 
 /** Вимагає вхід (і, якщо вказано, конкретну роль). Інакше — на сторінку входу. */
 export async function requireUser(...roles: Role[]) {
@@ -36,5 +33,5 @@ export function homeFor(role: Role) {
 
 /** Діти цих батьків. */
 export async function getChildren(parentId: string) {
-  return db.select().from(schema.users).where(eq(schema.users.parentId, parentId)).orderBy(schema.users.createdAt);
+  return prisma.user.findMany({ where: { parentId }, orderBy: { createdAt: "asc" } });
 }

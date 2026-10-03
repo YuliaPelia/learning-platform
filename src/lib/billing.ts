@@ -1,10 +1,11 @@
 import "server-only";
-import { eq } from "drizzle-orm";
-import { db, schema } from "@/db";
+import { prisma } from "@/db";
+import { Prisma } from "@/generated/prisma/client";
+import type { PaymentStatus } from "@/generated/prisma/enums";
 import { extendPeriod } from "./access";
-import { formatDate } from "./format";
+import { formatDate, formatUah } from "./format";
 import { appUrl, sendEmail } from "./mailer";
-import { PLANS } from "./plans";
+import { GRACE_DAYS } from "./plans";
 import type { WfpCallback } from "./wayforpay";
 
 /**
@@ -24,83 +25,120 @@ export function newOrderReference() {
   return `ITC-${Date.now().toString(36).toUpperCase()}-${rand}`;
 }
 
+/** Статус транзакції WayForPay → статус платежу в нашій базі. */
+export function paymentStatusFrom(transactionStatus: string): PaymentStatus {
+  switch (transactionStatus) {
+    case "Approved":
+      return "approved";
+    case "Declined":
+    case "Expired":
+      return "declined";
+    case "Refunded":
+    case "Voided":
+      return "refunded";
+    default:
+      return "pending"; // InProcessing, WaitingAuthComplete тощо
+  }
+}
+
+/** WayForPay передає суму в гривнях (449 або "449.00"), у базі — копійки. */
+export function toKopecks(amount: number | string) {
+  return Math.round(Number(amount) * 100);
+}
+
+/**
+ * Записує платіж (один рядок на orderReference). Повертає false, якщо такий самий
+ * статус уже записано — тобто це повторний callback і робити нічого не треба.
+ */
+async function recordPayment(subscriptionId: string, cb: WfpCallback, status: PaymentStatus) {
+  const paidAt = status === "approved" ? new Date((cb.processingDate ?? Math.floor(Date.now() / 1000)) * 1000) : null;
+  const data = {
+    amount: toKopecks(cb.amount),
+    currency: cb.currency,
+    status,
+    raw: cb as unknown as Prisma.InputJsonValue,
+    paidAt,
+  };
+  const existing = await prisma.payment.findUnique({ where: { orderId: cb.orderReference } });
+  if (existing) {
+    if (existing.status === status) return false;
+    // Умова на старий статус робить оновлення атомарним, якщо два callback-и прийшли одночасно
+    const { count } = await prisma.payment.updateMany({ where: { id: existing.id, status: existing.status }, data });
+    return count > 0;
+  }
+  try {
+    await prisma.payment.create({ data: { ...data, subscriptionId, orderId: cb.orderReference } });
+    return true;
+  } catch (e) {
+    // order_id унікальний: паралельний такий самий callback уже записав платіж
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") return false;
+    throw e;
+  }
+}
+
 /**
  * Обробка результату платежу (з callback-а WayForPay або тестової оплати).
  * Ідемпотентна: повторний той самий callback нічого не змінює.
  */
 export async function applyPaymentEvent(cb: WfpCallback): Promise<"ok" | "duplicate" | "unknown_order" | "amount_mismatch"> {
-  const [sub] = await db
-    .select()
-    .from(schema.subscriptions)
-    .where(eq(schema.subscriptions.orderReference, baseOrderReference(cb.orderReference)));
+  const sub = await prisma.subscription.findUnique({
+    where: { orderReference: baseOrderReference(cb.orderReference) },
+    include: { plan: true, user: true },
+  });
   if (!sub) return "unknown_order";
 
-  const eventKey = `${cb.orderReference}:${cb.processingDate ?? cb.createdDate ?? "na"}:${cb.transactionStatus}`;
-  const inserted = await db
-    .insert(schema.payments)
-    .values({
-      subscriptionId: sub.id,
-      orderReference: cb.orderReference,
-      amount: String(cb.amount),
-      currency: cb.currency,
-      transactionStatus: cb.transactionStatus,
-      eventKey,
-      raw: cb,
-    })
-    .onConflictDoNothing()
-    .returning({ id: schema.payments.id });
-  if (!inserted.length) return "duplicate";
+  const status = paymentStatusFrom(cb.transactionStatus);
+  if (!(await recordPayment(sub.id, cb, status))) return "duplicate";
 
-  const [parent] = await db.select().from(schema.users).where(eq(schema.users.id, sub.parentId));
-  const planName = PLANS[sub.plan].name;
+  const parentEmail = sub.user.email;
+  const planName = sub.plan.name;
 
-  switch (cb.transactionStatus) {
-    case "Approved": {
-      if (cb.currency !== "UAH" || Number(cb.amount) < sub.amount) {
+  switch (status) {
+    case "approved": {
+      if (cb.currency !== "UAH" || toKopecks(cb.amount) < sub.amount) {
         console.error("Сума платежу не збігається з підпискою", cb.orderReference, cb.amount, sub.amount);
         return "amount_mismatch";
       }
       const firstPayment = sub.status === "pending";
-      const currentPeriodEnd = extendPeriod(sub.currentPeriodEnd);
-      await db
-        .update(schema.subscriptions)
-        .set({
+      const endsAt = extendPeriod(sub.endsAt);
+      await prisma.subscription.update({
+        where: { id: sub.id },
+        data: {
           // скасовану підписку не "воскрешаємо", але оплачений місяць надаємо
           status: sub.status === "canceled" ? "canceled" : "active",
-          currentPeriodEnd,
+          startsAt: sub.startsAt ?? new Date(),
+          endsAt,
           recToken: cb.recToken || sub.recToken,
-        })
-        .where(eq(schema.subscriptions.id, sub.id));
+        },
+      });
       await sendEmail(
-        parent?.email,
+        parentEmail,
         firstPayment ? `Оплата пройшла: тариф «${planName}» активовано` : `Підписку «${planName}» продовжено`,
-        `Дякуємо! Оплата ${cb.amount} грн пройшла успішно.\nДоступ діє до ${formatDate(currentPeriodEnd)}\n\n` +
+        `Дякуємо! Оплата ${formatUah(toKopecks(cb.amount))} пройшла успішно.\nДоступ діє до ${formatDate(endsAt)}\n\n` +
           `Керувати підпискою або скасувати її: ${appUrl("/cabinet/parent")}\nПублічна оферта: ${appUrl("/legal/oferta")}\n\nКоманда ITCodeCraft`,
       );
       return "ok";
     }
-    case "Declined":
-    case "Expired": {
+    case "declined": {
       if (sub.status === "active") {
-        await db.update(schema.subscriptions).set({ status: "past_due" }).where(eq(schema.subscriptions.id, sub.id));
+        await prisma.subscription.update({ where: { id: sub.id }, data: { status: "past_due" } });
         await sendEmail(
-          parent?.email,
+          parentEmail,
           "Не вдалося списати оплату за навчання",
           `Щомісячне списання за тариф «${planName}» не пройшло${cb.reason ? ` (${cb.reason})` : ""}.\n` +
-            `Доступ збережеться ще 3 дні. Перевірте картку або оформіть підписку знову: ${appUrl("/pricing")}\n\nКоманда ITCodeCraft`,
+            `Доступ збережеться ще ${GRACE_DAYS} дні. Перевірте картку або оформіть підписку знову: ${appUrl("/pricing")}\n\nКоманда ITCodeCraft`,
         );
       }
       return "ok";
     }
-    case "Refunded":
-    case "Voided": {
-      await db
-        .update(schema.subscriptions)
-        .set({ status: "canceled", canceledAt: new Date(), currentPeriodEnd: new Date() })
-        .where(eq(schema.subscriptions.id, sub.id));
+    case "refunded": {
+      await prisma.subscription.update({
+        where: { id: sub.id },
+        data: { status: "canceled", canceledAt: new Date(), endsAt: new Date() },
+      });
       return "ok";
     }
     default:
-      return "ok"; // Pending, InProcessing тощо — чекаємо фінального статусу
+      return "ok"; // pending — чекаємо фінального статусу
   }
 }

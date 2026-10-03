@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { asc } from "drizzle-orm";
-import { db, schema } from "@/db";
+import { prisma } from "@/db";
 import { CourseCatalog, type CatalogGroup } from "@/components/course-catalog";
 import { IconArrow, IconCheck, IconClock, IconFlame, IconStar } from "@/components/icons";
 import { PublicShell } from "@/components/site-chrome";
@@ -26,7 +25,7 @@ const STEPS = [
 ];
 
 export default async function HomePage() {
-  const courses = await db.select().from(schema.courses).orderBy(asc(schema.courses.sortOrder));
+  const courses = await prisma.course.findMany({ orderBy: { sortOrder: "asc" } });
   const groups: CatalogGroup[] = Object.keys(CATEGORY_LABELS)
     .map((cat) => {
       const list = courses.filter((c) => c.category === cat);

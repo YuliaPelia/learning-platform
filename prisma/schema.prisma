@@ -1,0 +1,312 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────── Enums ─────────────
+
+enum Role {
+  parent
+  student
+  teacher
+  admin
+}
+
+enum PlanCode {
+  basic
+  standard
+  premium
+}
+
+enum BillingPeriod {
+  month
+  year
+}
+
+enum SubscriptionStatus {
+  pending // створена, перший платіж ще не пройшов
+  active
+  past_due // автосписання не вдалося, доступ під загрозою
+  canceled
+}
+
+enum PaymentStatus {
+  pending
+  approved
+  declined
+  refunded
+}
+
+enum CourseCategory {
+  start // ігри та перші кроки
+  web
+  design
+  code
+  mobile
+  games
+}
+
+enum CourseStatus {
+  published
+  soon
+}
+
+enum LessonType {
+  video
+  text
+  quiz
+}
+
+enum ConsentType {
+  offer // публічна оферта
+  child_data // згода на обробку даних дитини
+  age_confirm // "мені є 18, я батько/мати/опікун" — при реєстрації
+  immediate_access // згода на негайний доступ до цифрового контенту — перед оплатою
+}
+
+enum SubmissionStatus {
+  pending // домашку видано, дитина ще не здала
+  submitted // здано, чекає на викладача (Преміум)
+  reviewed // зараховано або перевірено викладачем
+}
+
+// ───────────── 1. users ─────────────
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String?  @unique // у дитини email може не бути — входить за login
+  login        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role
+  name         String
+  birthYear    Int?     @map("birth_year") // зберігаємо рік, а не вік: вік змінюється щороку
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Для дитини — посилання на батьківський акаунт
+  parentId String? @map("parent_id") @db.Uuid
+  parent   User?   @relation("ParentChildren", fields: [parentId], references: [id], onDelete: Restrict)
+  children User[]  @relation("ParentChildren")
+
+  subscriptions        Subscription[] @relation("PayerSubscriptions")
+  studentSubscriptions Subscription[] @relation("StudentSubscriptions")
+  progress             Progress[]
+  submissions          Submission[]
+  consents             Consent[]      @relation("ConsentParent")
+  childConsents        Consent[]      @relation("ConsentChild")
+
+  @@index([parentId])
+  @@map("users")
+}
+
+// ───────────── 2. plans ─────────────
+
+model Plan {
+  id       String        @id @default(uuid()) @db.Uuid
+  code     PlanCode      @unique
+  name     String
+  price    Int // у копійках, щоб уникнути похибок float
+  currency String        @default("UAH")
+  period   BillingPeriod @default(month)
+  rank     Int           @unique // 1 = basic, 2 = standard, 3 = premium; доступ: plan.rank >= course.minPlan.rank
+  isActive Boolean       @default(true) @map("is_active")
+
+  subscriptions Subscription[]
+  courses       Course[]
+
+  @@map("plans")
+}
+
+// ───────────── 3. subscriptions ─────────────
+
+model Subscription {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @map("user_id") @db.Uuid // платник (батьки)
+  user   User   @relation("PayerSubscriptions", fields: [userId], references: [id], onDelete: Restrict)
+  planId String @map("plan_id") @db.Uuid
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  // Для якої дитини оплачено. null — профіль дитини видалено (підписка лишається для обліку)
+  studentId String? @map("student_id") @db.Uuid
+  student   User?   @relation("StudentSubscriptions", fields: [studentId], references: [id], onDelete: SetNull)
+  // Обраний курс для тарифів "1 курс на вибір" (basic, standard); для premium — null (усі курси)
+  courseId  String? @map("course_id") @db.Uuid
+  course    Course? @relation(fields: [courseId], references: [id], onDelete: Restrict)
+
+  orderReference String @unique @map("order_reference") // наш номер замовлення в WayForPay
+  amount         Int // сума щомісячного списання, у копійках
+
+  status               SubscriptionStatus @default(pending)
+  startsAt             DateTime?          @map("starts_at")
+  endsAt               DateTime?          @map("ends_at") // кінець оплаченого періоду
+  recToken             String?            @map("rec_token") // токен для рекурентних списань
+  canceledAt           DateTime?          @map("canceled_at")
+  remindedForPeriodEnd DateTime?          @map("reminded_for_period_end") // щоб не надсилати нагадування про списання двічі
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  payments Payment[]
+  consents Consent[]
+
+  @@index([userId, status])
+  @@index([studentId])
+  @@map("subscriptions")
+}
+
+// ───────────── 4. payments ─────────────
+
+model Payment {
+  id             String       @id @default(uuid()) @db.Uuid
+  subscriptionId String       @map("subscription_id") @db.Uuid
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
+
+  amount    Int // у копійках
+  currency  String        @default("UAH")
+  status    PaymentStatus @default(pending)
+  orderId   String        @unique @map("order_id") // order_id платіжної системи; unique захищає від дубля callback-ів
+  raw       Json? // сирий callback від платіжки — для розбору спорів
+  paidAt    DateTime?     @map("paid_at")
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  @@index([subscriptionId])
+  @@map("payments")
+}
+
+// ───────────── 5. courses ─────────────
+
+model Course {
+  id          String         @id @default(uuid()) @db.Uuid
+  slug        String         @unique
+  title       String
+  description String?
+  category    CourseCategory @default(code)
+  ageFrom     Int            @map("age_from")
+  ageTo       Int            @map("age_to")
+  status      CourseStatus   @default(soon)
+  sortOrder   Int            @default(0) @map("sort_order")
+
+  // Мінімальний тариф для доступу. Звичайні курси — basic; новинки, які спершу
+  // відкриваються лише Преміуму ("новинки раніше за всіх"), — premium.
+  minPlanId String @map("min_plan_id") @db.Uuid
+  minPlan   Plan   @relation(fields: [minPlanId], references: [id], onDelete: Restrict)
+
+  lessons       Lesson[]
+  subscriptions Subscription[]
+
+  @@map("courses")
+}
+
+// ───────────── 6. lessons ─────────────
+
+model Lesson {
+  id       String     @id @default(uuid()) @db.Uuid
+  courseId String     @map("course_id") @db.Uuid
+  course   Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  order    Int // порядковий номер у курсі
+  type     LessonType
+  title    String
+  summary  String     @default("") // одне речення для списку уроків
+  xp       Int        @default(100) // скільки XP дає проходження
+  // Структура залежить від type:
+  //   video → { "url": "...", "durationSec": 300, "markdown": "необов'язковий текст під відео" }
+  //   text  → { "markdown": "..." }
+  //   quiz  → { "markdown": "необов'язковий вступ", "questions": [{ "q": "...", "options": [...], "answer": 0 }] }
+  content  Json
+
+  progress Progress[]
+  homework Homework?
+
+  @@unique([courseId, order])
+  @@map("lessons")
+}
+
+// ───────────── 7. progress ─────────────
+
+model Progress {
+  userId   String @map("user_id") @db.Uuid
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId String @map("lesson_id") @db.Uuid
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  completed   Boolean   @default(false)
+  score       Int? // бали (для quiz)
+  completedAt DateTime? @map("completed_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@id([userId, lessonId]) // один запис прогресу на пару учень–урок
+  @@index([lessonId])
+  @@map("progress")
+}
+
+// ───────────── 8. homework ─────────────
+
+model Homework {
+  id       String    @id @default(uuid()) @db.Uuid
+  lessonId String    @unique @map("lesson_id") @db.Uuid // один урок — не більше однієї домашки
+  lesson   Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  task     String
+  maxScore Int       @default(10) @map("max_score")
+  dueDays  Int       @default(7) @map("due_days") // дедлайн: через скільки днів після проходження уроку
+  deadline DateTime? // фіксований дедлайн для всіх (якщо задано — важливіший за due_days)
+
+  submissions Submission[]
+
+  @@map("homework")
+}
+
+// ───────────── 9. submissions ─────────────
+
+model Submission {
+  id         String   @id @default(uuid()) @db.Uuid
+  homeworkId String   @map("homework_id") @db.Uuid
+  homework   Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  userId     String   @map("user_id") @db.Uuid
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Запис створюється, коли дитина проходить урок (status = pending, з дедлайном),
+  // і оновлюється, коли вона здає відповідь.
+  status         SubmissionStatus @default(pending)
+  dueAt          DateTime?        @map("due_at")
+  needsTeacher   Boolean          @default(false) @map("needs_teacher") // тариф Преміум — перевіряє викладач
+  answer         String?
+  fileUrl        String?          @map("file_url")
+  score          Int? // null = ще не перевірено
+  teacherComment String?          @map("teacher_comment")
+  submittedAt    DateTime?        @map("submitted_at")
+  reviewedAt     DateTime?        @map("reviewed_at")
+  remindedAt     DateTime?        @map("reminded_at") // коли надіслали нагадування про дедлайн
+
+  @@unique([homeworkId, userId]) // повторна здача оновлює наявний запис
+  @@index([userId])
+  @@index([status, dueAt])
+  @@map("submissions")
+}
+
+// ───────────── 10. consents ─────────────
+// Доказ у спорі: хто, коли і яку версію документа прийняв.
+// Записи лише додаються (append-only), ніколи не оновлюються.
+
+model Consent {
+  id             String        @id @default(uuid()) @db.Uuid
+  parentId       String        @map("parent_id") @db.Uuid
+  parent         User          @relation("ConsentParent", fields: [parentId], references: [id], onDelete: Restrict)
+  // Для child_data — дані якої дитини. Якщо батьки видаляють профіль дитини,
+  // посилання обнуляється, а сам запис згоди лишається як доказ.
+  childId        String?       @map("child_id") @db.Uuid
+  child          User?         @relation("ConsentChild", fields: [childId], references: [id], onDelete: SetNull)
+  // Для offer / immediate_access — до якої підписки стосується згода
+  subscriptionId String?       @map("subscription_id") @db.Uuid
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  type            ConsentType
+  documentVersion String      @map("document_version") // напр. "offer-2026-09-01"
+  ip              String
+  userAgent       String?     @map("user_agent")
+  acceptedAt      DateTime    @default(now()) @map("accepted_at")
+
+  @@index([parentId, type])
+  @@map("consents")
+}
