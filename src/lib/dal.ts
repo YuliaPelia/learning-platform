@@ -27,7 +27,8 @@ export async function requireUser(...roles: Role[]) {
 export function homeFor(role: Role) {
   if (role === "parent") return "/cabinet/parent";
   if (role === "student") return "/cabinet/student";
-  if (role === "teacher" || role === "admin") return "/teacher";
+  if (role === "teacher") return "/teacher";
+  if (role === "admin") return "/admin";
   return "/";
 }
 

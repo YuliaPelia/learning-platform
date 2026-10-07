@@ -8,6 +8,11 @@ export function formatShortDate(d: Date | null | undefined) {
   return new Intl.DateTimeFormat("uk-UA", { day: "numeric", month: "short", timeZone: "Europe/Kyiv" }).format(d);
 }
 
+export function formatDateTime(d: Date | null | undefined) {
+  if (!d) return "—";
+  return new Intl.DateTimeFormat("uk-UA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Kyiv" }).format(d);
+}
+
 /** Українські відмінки: 1 день, 2 дні, 5 днів (правила з Intl.PluralRules). */
 export function plural(n: number, forms: { one: string; few: string; many: string }) {
   const rule = new Intl.PluralRules("uk-UA").select(n);

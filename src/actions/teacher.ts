@@ -5,7 +5,7 @@ import { prisma } from "@/db";
 import { requireUser } from "@/lib/dal";
 
 export async function reviewHomework(formData: FormData) {
-  await requireUser("teacher", "admin");
+  await requireUser("teacher");
   const id = String(formData.get("homeworkId") ?? "");
   const sub = await prisma.submission.findUnique({ where: { id }, include: { homework: { select: { maxScore: true } } } });
   if (!sub) return;
@@ -15,5 +15,7 @@ export async function reviewHomework(formData: FormData) {
     where: { id },
     data: { status: "reviewed", score, teacherComment: comment || null, reviewedAt: new Date() },
   });
-  revalidatePath("/teacher");
+  revalidatePath("/teacher", "layout");
+  revalidatePath("/learn", "layout");
+  revalidatePath("/cabinet/student");
 }

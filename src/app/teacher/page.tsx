@@ -1,26 +1,28 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { prisma } from "@/db";
 import { reviewHomework } from "@/actions/teacher";
-import { CabinetShell } from "@/components/cabinet-shell";
+import { TeacherShell } from "@/components/teacher-shell";
 import { requireUser } from "@/lib/dal";
-import { formatShortDate } from "@/lib/format";
+import { formatShortDate, plural } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Кабінет викладача" };
 
 /** Черга домашок учнів тарифу Преміум, які чекають на перевірку. */
 export default async function TeacherPage() {
-  const teacher = await requireUser("teacher", "admin");
+  const teacher = await requireUser("teacher");
   const queue = await prisma.submission.findMany({
     where: { status: "submitted" },
     include: {
       user: { select: { name: true } },
       homework: { include: { lesson: { select: { title: true, order: true, course: { select: { title: true } } } } } },
+      _count: { select: { messages: true } },
     },
     orderBy: { submittedAt: "asc" },
   });
 
   return (
-    <CabinetShell nav={[{ href: "/teacher", label: "Перевірка домашок" }]} user={teacher} roleLabel="Викладач">
+    <TeacherShell user={teacher}>
       <h1 className="font-display text-3xl font-bold">Домашки на перевірку</h1>
       {queue.length === 0 && <p className="text-muted">Черга порожня — усе перевірено 👏</p>}
       {queue.map((hw) => (
@@ -45,8 +47,13 @@ export default async function TeacherPage() {
             </div>
             <button className="btn-primary">Зарахувати</button>
           </form>
+          <Link href={`/teacher/submissions/${hw.id}`} className="self-start font-semibold text-accent hover:underline">
+            {hw._count.messages
+              ? `Листування з учнем (${plural(hw._count.messages, { one: "повідомлення", few: "повідомлення", many: "повідомлень" })})`
+              : "Написати учню щодо завдання"}
+          </Link>
         </section>
       ))}
-    </CabinetShell>
+    </TeacherShell>
   );
 }
