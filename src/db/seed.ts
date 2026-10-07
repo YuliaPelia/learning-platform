@@ -1,6 +1,7 @@
 /**
  * Початкові дані: тарифи, каталог курсів, демо-уроки та демо-акаунти.
- * Запуск: `npm run db:seed` (можна запускати повторно — дані оновлюються, а не дублюються).
+ * Запуск: `npm run db:seed` (можна запускати повторно — дані не дублюються;
+ * курси й уроки, які вже є в базі, лишаються як є — їх редагують в адмін-панелі /admin).
  */
 import { config } from "dotenv";
 config({ path: ".env.local" });
@@ -231,16 +232,19 @@ async function main() {
   for (const [i, c] of COURSES.entries()) {
     const status = LESSONS[c.slug] ? "published" : "soon";
     const data = { ...c, status, sortOrder: i } as const;
+    // Наявні курси не чіпаємо: їх редагує адмін у /admin, і повторний seed не має затирати його зміни
     await prisma.course.upsert({
       where: { slug: c.slug },
-      update: data,
+      update: {},
       create: { ...data, minPlanId: basic.id },
     });
   }
 
   console.log("Уроки й домашки…");
   for (const [slug, lessons] of Object.entries(LESSONS)) {
-    const course = await prisma.course.findUniqueOrThrow({ where: { slug } });
+    const course = await prisma.course.findUniqueOrThrow({ where: { slug }, include: { _count: { select: { lessons: true } } } });
+    // Демо-уроки додаємо лише в порожній курс — програму, яку вже веде адмін, не перезаписуємо
+    if (course._count.lessons > 0) continue;
     for (const [i, l] of lessons.entries()) {
       const type = l.type ?? "text";
       const content: Prisma.InputJsonValue = type === "quiz" ? { markdown: l.content, questions: l.questions ?? [] } : { markdown: l.content };
@@ -275,6 +279,7 @@ async function main() {
   const parent = await upsertUser({ role: "parent", login: "demo@itcodecraft.test", email: "demo@itcodecraft.test", name: "Олена", password: "demo12345" });
   await upsertUser({ role: "student", login: "maks", name: "Макс", birthYear: new Date().getFullYear() - 12, parentId: parent.id, password: "maks12345" });
   await upsertUser({ role: "teacher", login: "teacher@itcodecraft.test", email: "teacher@itcodecraft.test", name: "Викладач", password: "teacher12345" });
+  await upsertUser({ role: "admin", login: "admin@itcodecraft.test", email: "admin@itcodecraft.test", name: "Адміністратор", password: "admin12345" });
 
   console.log("Готово ✔");
 }

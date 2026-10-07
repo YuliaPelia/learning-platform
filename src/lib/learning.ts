@@ -83,7 +83,10 @@ export async function getStudentOverview(studentId: string) {
 
   const submissions = await prisma.submission.findMany({
     where: { userId: studentId },
-    include: { homework: { include: { lesson: { include: { course: { select: { slug: true, title: true } } } } } } },
+    include: {
+      homework: { include: { lesson: { include: { course: { select: { slug: true, title: true } } } } } },
+      messages: { orderBy: { createdAt: "desc" }, take: 1, select: { author: { select: { role: true } } } },
+    },
     orderBy: [{ dueAt: "desc" }, { submittedAt: "desc" }],
   });
   const homework = submissions.map((s) => ({
@@ -95,6 +98,7 @@ export async function getStudentOverview(studentId: string) {
     maxScore: s.homework.maxScore,
     teacherComment: s.teacherComment,
     needsTeacher: s.needsTeacher,
+    teacherReplied: s.messages[0]?.author.role === "teacher", // останнє повідомлення в листуванні — від викладача
     lessonTitle: s.homework.lesson.title,
     lessonOrder: s.homework.lesson.order,
     courseSlug: s.homework.lesson.course.slug,

@@ -5,6 +5,7 @@ import { prisma } from "@/db";
 import { completeLesson, requestUnlock, submitHomework, submitQuiz } from "@/actions/learning";
 import { StatusBadge } from "@/components/cabinet-shell";
 import { IconArrow, IconCheck, IconLock } from "@/components/icons";
+import { MessageThread } from "@/components/message-thread";
 import { Logo } from "@/components/site-chrome";
 import { requireUser } from "@/lib/dal";
 import { formatShortDate } from "@/lib/format";
@@ -28,7 +29,10 @@ export default async function LessonPage({ params, searchParams }: PageProps<"/l
 
   const task = lesson.homework;
   const hw = task
-    ? await prisma.submission.findUnique({ where: { homeworkId_userId: { homeworkId: task.id, userId: user.id } } })
+    ? await prisma.submission.findUnique({
+        where: { homeworkId_userId: { homeworkId: task.id, userId: user.id } },
+        include: { messages: { orderBy: { createdAt: "asc" }, include: { author: { select: { id: true, name: true, role: true } } } } },
+      })
     : null;
   const content = parseLessonContent(lesson.type, lesson.content);
   // ?quiz=2-3 — результат невдалої спроби тесту (правильних-усього)
@@ -155,6 +159,13 @@ export default async function LessonPage({ params, searchParams }: PageProps<"/l
                       <pre className="overflow-x-auto rounded-2xl bg-ink p-4 font-mono text-sm text-soft">{hw.answer}</pre>
                       {hw.teacherComment && <p className="leading-relaxed">Викладач: «{hw.teacherComment}»</p>}
                     </>
+                  )}
+                  {/* Листування з викладачем — лише там, де домашку перевіряє викладач (тариф Преміум) */}
+                  {hw?.needsTeacher && (
+                    <div className="flex flex-col gap-3 border-t border-line pt-5">
+                      <h3 className="font-bold">Запитання до викладача</h3>
+                      <MessageThread submissionId={hw.id} messages={hw.messages} viewerId={user.id} placeholder="Не виходить чи щось незрозуміло? Напиши викладачу…" />
+                    </div>
                   )}
                 </section>
               )}

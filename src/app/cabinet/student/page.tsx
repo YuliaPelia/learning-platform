@@ -145,6 +145,7 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
                 <span className="text-sm text-muted">
                   {h.status === "pending" ? `Дедлайн ${formatShortDate(h.dueAt)}` : h.teacherComment ? `Викладач: «${h.teacherComment}»` : "Здано"}
                 </span>
+                {h.teacherReplied && <span className="text-sm font-semibold text-accent">Викладач відповів на твоє запитання</span>}
               </div>
               {h.status === "pending" ? (
                 <StatusBadge tone={h.dueAt && h.dueAt < now ? "bad" : "wait"}>{h.dueAt && h.dueAt < now ? "Прострочено" : "Чекає"}</StatusBadge>

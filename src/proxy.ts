@@ -5,7 +5,7 @@
  */
 import { NextResponse, type NextRequest } from "next/server";
 
-const PROTECTED = ["/cabinet", "/learn", "/checkout", "/teacher"];
+const PROTECTED = ["/cabinet", "/learn", "/checkout", "/teacher", "/admin"];
 
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -18,5 +18,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/cabinet/:path*", "/learn/:path*", "/checkout/:path*", "/teacher/:path*"],
+  matcher: ["/cabinet/:path*", "/learn/:path*", "/checkout/:path*", "/teacher/:path*", "/admin/:path*"],
 };
