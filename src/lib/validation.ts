@@ -91,6 +91,18 @@ export const LessonSchema = z.object({
   dueDays: z.coerce.number().int().min(1).max(60),
 });
 
+/** Перевірка роботи викладачем. Оцінка й коментар не відхиляються, а нормалізуються (клемпінг до maxScore — в action). */
+export const ReviewHomeworkSchema = z.object({
+  homeworkId: z.uuid(),
+  // Нечисловий/відсутній score => 0
+  score: z.coerce.number().catch(0),
+  // Обрізаємо до 2000 символів; порожній => null
+  comment: z
+    .string()
+    .catch("")
+    .transform((s) => s.trim().slice(0, 2000) || null),
+});
+
 export type FormState =
   | {
       error?: string;
