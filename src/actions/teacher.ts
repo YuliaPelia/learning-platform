@@ -9,6 +9,8 @@ export async function reviewHomework(formData: FormData) {
   const id = String(formData.get("homeworkId") ?? "");
   const sub = await prisma.submission.findUnique({ where: { id }, include: { homework: { select: { maxScore: true } } } });
   if (!sub) return;
+  // Перевіряти можна лише здані роботи, що чекають на викладача (Преміум)
+  if (sub.status !== "submitted" || !sub.needsTeacher) return;
   const score = Math.max(0, Math.min(sub.homework.maxScore, Number(formData.get("score") ?? 0) || 0));
   const comment = String(formData.get("comment") ?? "").trim().slice(0, 2000);
   await prisma.submission.update({
