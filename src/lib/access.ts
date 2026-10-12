@@ -76,3 +76,8 @@ export function extendPeriod(currentEnd: Date | null, now: Date = new Date()): D
   if (next.getDate() !== base.getDate()) next.setDate(0);
   return next;
 }
+
+/** Перездати домашку можна до перевірки; після `reviewed` — ні. */
+export function canSubmitHomework(status: "pending" | "submitted" | "reviewed"): boolean {
+  return status !== "reviewed";
+}

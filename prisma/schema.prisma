@@ -329,3 +329,14 @@ model Consent {
   @@index([parentId, type])
   @@map("consents")
 }
+
+/// Лічильники невдалих входів (rate limiting). Зберігаємо в БД, щоб працювало на serverless.
+/// key: "login:<логін>" або "ip:<адреса>"
+model LoginAttempt {
+  key         String    @id
+  failures    Int       @default(0)
+  windowStart DateTime  @default(now()) @map("window_start")
+  lockedUntil DateTime? @map("locked_until")
+
+  @@map("login_attempts")
+}

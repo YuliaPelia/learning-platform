@@ -19,6 +19,9 @@ export async function POST(request: Request) {
   const result = await applyPaymentEvent(cb);
   if (result === "unknown_order") console.warn("Callback для невідомого замовлення", cb.orderReference);
 
+  // Неправильна сума/валюта — відхиляємо (доступ не відкрито)
+  if (result === "amount_mismatch") return Response.json({ error: "amount mismatch" }, { status: 400 });
+
   // Підтверджуємо отримання, інакше WayForPay повторюватиме запит до 4 днів
   return Response.json(acceptResponse(cb.orderReference, cfg.secretKey));
 }

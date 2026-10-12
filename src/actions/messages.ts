@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/db";
 import { requireUser } from "@/lib/dal";
+import { SendMessageSchema } from "@/lib/validation";
 
 /**
  * Повідомлення в гілці домашки. Писати можуть лише учень, якому належить домашка
@@ -10,16 +11,18 @@ import { requireUser } from "@/lib/dal";
  */
 export async function sendMessage(formData: FormData) {
   const user = await requireUser("student", "teacher");
-  const submissionId = String(formData.get("submissionId") ?? "");
-  const body = String(formData.get("body") ?? "").trim().slice(0, 2000);
-  if (!body) return;
+  const parsed = SendMessageSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return;
+  const { submissionId, body } = parsed.data;
 
   const sub = await prisma.submission.findUnique({
     where: { id: submissionId },
     select: { id: true, userId: true, needsTeacher: true },
   });
   if (!sub) return;
-  if (user.role === "student" && (sub.userId !== user.id || !sub.needsTeacher)) return;
+  // Тред існує лише для робіт, які перевіряє викладач; учень бачить лише свій тред
+  if (!sub.needsTeacher) return;
+  if (user.role === "student" && sub.userId !== user.id) return;
 
   await prisma.message.create({ data: { submissionId: sub.id, authorId: user.id, body } });
   revalidatePath("/teacher", "layout");

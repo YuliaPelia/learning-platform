@@ -16,7 +16,8 @@ export const RegisterSchema = z.object({
 });
 
 export const LoginSchema = z.object({
-  login: z.string().trim().toLowerCase().min(2, { error: "Вкажіть email або логін" }),
+  login: z.string().trim().toLowerCase().min(2, { error: "Вкажіть email або логін" })
+    .max(100, { error: "Логін занадто довгий" }),
   password: z.string().min(1, { error: "Вкажіть пароль" }),
 });
 
@@ -45,6 +46,8 @@ export const CheckoutSchema = z.object({
   consentOffer: z.literal("on", { error: "Потрібно прийняти умови оферти" }),
   consentImmediate: z.literal("on", { error: "Потрібна згода на негайний доступ до уроків" }),
 });
+
+export const CancelSubscriptionSchema = z.object({ subscriptionId: z.uuid() });
 
 export const CourseSchema = z
   .object({
@@ -103,6 +106,12 @@ export const ReviewHomeworkSchema = z.object({
     .transform((s) => s.trim().slice(0, 2000) || null),
 });
 
+/** Повідомлення в гілці домашки: непорожнє, до 2000 символів (довше — відхиляємо, а не обрізаємо). */
+export const SendMessageSchema = z.object({
+  submissionId: z.uuid(),
+  body: z.string().trim().min(1).max(2000),
+});
+
 export type FormState =
   | {
       error?: string;
@@ -122,3 +131,21 @@ export function keepValues(formData: FormData): Record<string, string> {
 export function firstError(err: z.ZodError): string {
   return err.issues[0]?.message ?? "Перевірте дані форми";
 }
+
+/** Ідентифікатор ресурсу з прихованого поля форми адмінки (курс або урок). */
+export const AdminIdSchema = z.uuid();
+
+/** Здача домашки учнем: id роботи + текст відповіді (обрізається до 10000 символів, порожній — помилка). */
+export const SubmitHomeworkSchema = z.object({
+  homeworkId: z.uuid(),
+  answer: z
+    .string()
+    .transform((s) => s.trim().slice(0, 10000))
+    .pipe(z.string().min(1)),
+});
+
+/** Ідентифікатор уроку з прихованого поля форми учня (колонка @db.Uuid: не-UUID дав би помилку Prisma). */
+export const LessonIdSchema = z.uuid();
+
+/** Ідентифікатор дитини з прихованого поля форми батька (колонка @db.Uuid: не-UUID дав би помилку Prisma P2023). */
+export const ChildIdSchema = z.uuid();

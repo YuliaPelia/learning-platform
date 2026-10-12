@@ -6,7 +6,7 @@ import { prisma } from "@/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { requireUser } from "@/lib/dal";
 import { normalizeVideoUrl } from "@/lib/lesson-content";
-import { CourseSchema, LessonSchema, QuizQuestionsSchema, firstError, keepValues, type FormState } from "@/lib/validation";
+import { AdminIdSchema, CourseSchema, LessonSchema, QuizQuestionsSchema, firstError, keepValues, type FormState } from "@/lib/validation";
 
 /** Курси й уроки показуються на багатьох сторінках (каталог, курс, урок, кабінети) — оновлюємо все. */
 function revalidateContent() {
@@ -19,7 +19,12 @@ export async function saveCourse(_prev: FormState, formData: FormData): Promise<
   const parsed = CourseSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: firstError(parsed.error), values: keepValues(formData) };
   const { minPlan, ...fields } = parsed.data;
-  const courseId = String(formData.get("courseId") ?? "");
+  // Порожній courseId — створення; непорожній мусить бути UUID (інакше Prisma кине P2023)
+  const rawCourseId = String(formData.get("courseId") ?? "");
+  if (rawCourseId && !AdminIdSchema.safeParse(rawCourseId).success) {
+    return { error: "Курс не знайдено — можливо, його вже видалили", values: keepValues(formData) };
+  }
+  const courseId = rawCourseId;
 
   const taken = await prisma.course.findUnique({ where: { slug: fields.slug }, select: { id: true } });
   if (taken && taken.id !== courseId) return { error: "Курс з такою адресою вже існує", values: keepValues(formData) };
@@ -47,9 +52,10 @@ export async function saveCourse(_prev: FormState, formData: FormData): Promise<
  */
 export async function deleteCourse(formData: FormData) {
   await requireUser("admin");
-  const courseId = String(formData.get("courseId") ?? "");
+  const id = AdminIdSchema.safeParse(formData.get("courseId"));
+  if (!id.success) redirect("/admin");
   const course = await prisma.course.findUnique({
-    where: { id: courseId },
+    where: { id: id.data },
     select: { id: true, _count: { select: { subscriptions: true } } },
   });
   if (!course) redirect("/admin");
@@ -67,8 +73,13 @@ export async function saveLesson(_prev: FormState, formData: FormData): Promise<
   const parsed = LessonSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return fail(firstError(parsed.error));
   const f = parsed.data;
-  const courseId = String(formData.get("courseId") ?? "");
-  const lessonId = String(formData.get("lessonId") ?? "");
+  const courseIdParsed = AdminIdSchema.safeParse(formData.get("courseId"));
+  if (!courseIdParsed.success) return fail("Курс не знайдено");
+  const courseId = courseIdParsed.data;
+  // Порожній lessonId — створення нового уроку; непорожній мусить бути UUID
+  const rawLessonId = String(formData.get("lessonId") ?? "");
+  if (rawLessonId && !AdminIdSchema.safeParse(rawLessonId).success) return fail("Урок не знайдено в цьому курсі");
+  const lessonId = rawLessonId;
   const hasHomework = formData.get("hasHomework") === "on";
 
   let content: Prisma.InputJsonValue;
@@ -94,6 +105,10 @@ export async function saveLesson(_prev: FormState, formData: FormData): Promise<
 
   const course = await prisma.course.findUnique({ where: { id: courseId }, select: { id: true } });
   if (!course) return fail("Курс не знайдено");
+  if (lessonId) {
+    const own = await prisma.lesson.findFirst({ where: { id: lessonId, courseId: course.id }, select: { id: true } });
+    if (!own) return fail("Урок не знайдено в цьому курсі");
+  }
   const data = { type: f.type, title: f.title, summary: f.summary, xp: f.xp, content };
   const homework = { task: f.homeworkTask, maxScore: f.maxScore, dueDays: f.dueDays };
 
@@ -120,7 +135,9 @@ export async function saveLesson(_prev: FormState, formData: FormData): Promise<
 /** Видаляє урок і зсуває наступні, щоб номери уроків ішли без пропусків (від цього залежить порядок відкриття). */
 export async function deleteLesson(formData: FormData) {
   await requireUser("admin");
-  const lesson = await prisma.lesson.findUnique({ where: { id: String(formData.get("lessonId") ?? "") } });
+  const id = AdminIdSchema.safeParse(formData.get("lessonId"));
+  if (!id.success) return;
+  const lesson = await prisma.lesson.findUnique({ where: { id: id.data } });
   if (!lesson) return;
   await prisma.$transaction(async (tx) => {
     await tx.lesson.delete({ where: { id: lesson.id } });
@@ -139,7 +156,9 @@ export async function deleteLesson(formData: FormData) {
 /** Міняє урок місцями із сусіднім (direction: up | down). */
 export async function moveLesson(formData: FormData) {
   await requireUser("admin");
-  const lesson = await prisma.lesson.findUnique({ where: { id: String(formData.get("lessonId") ?? "") } });
+  const id = AdminIdSchema.safeParse(formData.get("lessonId"));
+  if (!id.success) return;
+  const lesson = await prisma.lesson.findUnique({ where: { id: id.data } });
   if (!lesson) return;
   const targetOrder = lesson.order + (formData.get("direction") === "up" ? -1 : 1);
   const other = await prisma.lesson.findUnique({ where: { courseId_order: { courseId: lesson.courseId, order: targetOrder } } });

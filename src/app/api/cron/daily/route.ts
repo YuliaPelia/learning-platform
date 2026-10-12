@@ -8,6 +8,7 @@ import { prisma } from "@/db";
 import { formatDate, formatUah } from "@/lib/format";
 import { appUrl, sendEmail } from "@/lib/mailer";
 import { GRACE_DAYS } from "@/lib/plans";
+import { deleteExpiredAttempts } from "@/lib/rate-limit";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -26,13 +27,18 @@ export async function GET(request: Request) {
   });
   for (const sub of soon) {
     if (sub.remindedForPeriodEnd?.getTime() === sub.endsAt?.getTime()) continue;
+    // Спершу "захоплюємо" підписку атомарно: паралельний запуск cron не надішле лист удруге
+    const claim = await prisma.subscription.updateMany({
+      where: { id: sub.id, OR: [{ remindedForPeriodEnd: null }, { remindedForPeriodEnd: { not: sub.endsAt } }] },
+      data: { remindedForPeriodEnd: sub.endsAt },
+    });
+    if (claim.count === 0) continue;
     await sendEmail(
       sub.user.email,
       "Нагадування: скоро щомісячне списання",
       `${formatDate(sub.endsAt)} буде списано ${formatUah(sub.amount)} за тариф «${sub.plan.name}».\n` +
         `Скасувати можна будь-коли в кабінеті: ${appUrl("/cabinet/parent")}\n\nКоманда ITCodeCraft`,
     );
-    await prisma.subscription.update({ where: { id: sub.id }, data: { remindedForPeriodEnd: sub.endsAt } });
     report.billingReminders++;
   }
 
@@ -46,21 +52,39 @@ export async function GET(request: Request) {
   });
   for (const s of due) {
     if (!s.user.parent) continue;
+    const claim = await prisma.submission.updateMany({ where: { id: s.id, remindedAt: null }, data: { remindedAt: now } });
+    if (claim.count === 0) continue;
     await sendEmail(
       s.user.parent.email,
       `${s.user.name}: завтра дедлайн домашки`,
       `Домашнє завдання до уроку «${s.homework.lesson.title}» треба здати до ${formatDate(s.dueAt)}\nКабінет: ${appUrl("/cabinet/parent")}`,
     );
-    await prisma.submission.update({ where: { id: s.id }, data: { remindedAt: now } });
     report.homeworkReminders++;
   }
 
-  // 3. Прострочені підписки після пільгового періоду
-  const expired = await prisma.subscription.updateMany({
+  // 3. Прострочені підписки після пільгового періоду (+ лист про закінчення)
+  const overdue = await prisma.subscription.findMany({
     where: { status: { in: ["past_due", "active"] }, endsAt: { lt: new Date(now.getTime() - GRACE_DAYS * DAY) } },
-    data: { status: "canceled", canceledAt: now },
+    include: { user: { select: { email: true } }, plan: { select: { name: true } } },
   });
-  report.expired = expired.count;
+  for (const sub of overdue) {
+    // Умова на статус — захист від повторного закриття й повторного листа
+    const claim = await prisma.subscription.updateMany({
+      where: { id: sub.id, status: { in: ["past_due", "active"] } },
+      data: { status: "canceled", canceledAt: now },
+    });
+    if (claim.count === 0) continue;
+    await sendEmail(
+      sub.user.email,
+      "Підписка завершилась",
+      `Доступ до платних уроків за тарифом «${sub.plan.name}» завершився. Перші 2 уроки кожного курсу лишаються безкоштовними.\n` +
+        `Оформити підписку знову: ${appUrl("/pricing")}\n\nКоманда ITCodeCraft`,
+    );
+    report.expired++;
+  }
 
-  return Response.json(report);
+  // 4. Очищення протермінованих лічильників невдалих входів
+  const loginAttemptsCleaned = await deleteExpiredAttempts(now);
+
+  return Response.json({ ...report, loginAttemptsCleaned });
 }

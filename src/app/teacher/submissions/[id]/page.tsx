@@ -24,7 +24,8 @@ export default async function TeacherSubmissionPage({ params }: PageProps<"/teac
       messages: { orderBy: { createdAt: "asc" }, include: { author: { select: { id: true, name: true, role: true } } } },
     },
   });
-  if (!sub) notFound();
+  // Викладач бачить лише роботи, які віддані на його перевірку (Преміум)
+  if (!sub || !sub.needsTeacher) notFound();
   const { homework } = sub;
 
   return (

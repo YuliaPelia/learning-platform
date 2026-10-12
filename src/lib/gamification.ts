@@ -13,7 +13,8 @@ export const LEVELS = [
   { level: 7, title: "Легенда", xp: 1800 },
 ] as const;
 
-export function levelFromXp(xp: number) {
+export function levelFromXp(rawXp: number) {
+  const xp = Math.max(0, rawXp);
   let current: (typeof LEVELS)[number] = LEVELS[0];
   for (const l of LEVELS) if (xp >= l.xp) current = l;
   const next = LEVELS.find((l) => l.xp > xp) ?? null;
@@ -26,20 +27,37 @@ export function dayKey(d: Date, timeZone = "Europe/Kyiv"): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
 }
 
+/** Попередній календарний день для ключа YYYY-MM-DD (арифметика по датах, а не по 24 годинах — стійка до переходу на літній час). */
+function prevDayKey(key: string): string {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d - 1)).toISOString().slice(0, 10);
+}
+
 /**
  * Серія днів поспіль з навчанням. Якщо сьогодні ще не вчився,
- * серія, що закінчилась учора, ще "жива".
+ * серія, що закінчилась учора, ще "жива". Кілька дій за день — це один день.
  */
 export function streakDays(activity: Date[], now: Date = new Date()): number {
   const days = new Set(activity.map((d) => dayKey(d)));
-  const cursor = new Date(now);
-  if (!days.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
+  let cursor = dayKey(now);
+  if (!days.has(cursor)) cursor = prevDayKey(cursor);
   let streak = 0;
-  while (days.has(dayKey(cursor))) {
+  while (days.has(cursor)) {
     streak++;
-    cursor.setDate(cursor.getDate() - 1);
+    cursor = prevDayKey(cursor);
   }
   return streak;
+}
+
+/** XP за здану (або зараховану) домашку. */
+export const HOMEWORK_XP = 50;
+
+/**
+ * XP виводиться з фактів (пройдені уроки + здані домашки), а не накопичується лічильником,
+ * тому повторна дія не може нарахувати його вдруге: кожен урок і кожна домашка враховуються один раз.
+ */
+export function totalXp(lessonXp: number[], submittedHomework: number): number {
+  return lessonXp.reduce((s, x) => s + x, 0) + submittedHomework * HOMEWORK_XP;
 }
 
 export type Badge = { id: string; title: string; description: string; earned: boolean };

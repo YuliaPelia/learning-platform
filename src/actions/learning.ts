@@ -3,12 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/db";
-import { canAccessLesson } from "@/lib/access";
+import { canAccessLesson, canSubmitHomework } from "@/lib/access";
 import { requireUser } from "@/lib/dal";
 import { gradeQuiz, parseLessonContent } from "@/lib/lesson-content";
 import { bestLivePlan, getStudentSubscriptions } from "@/lib/learning";
 import { appUrl, sendEmail } from "@/lib/mailer";
 import { PLANS } from "@/lib/plans";
+import { LessonIdSchema, SubmitHomeworkSchema } from "@/lib/validation";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -51,10 +52,15 @@ async function finishLesson(
 ) {
   const { lesson, course, subs } = loaded;
   const now = new Date();
+  // Ідемпотентно: уже пройдений урок не оновлюємо (інакше повтор зсуває дату/бал і серію днів)
   await prisma.progress.upsert({
     where: { userId_lessonId: { userId: studentId, lessonId: lesson.id } },
     create: { userId: studentId, lessonId: lesson.id, completed: true, completedAt: now, score },
-    update: { completed: true, completedAt: now, score },
+    update: {},
+  });
+  await prisma.progress.updateMany({
+    where: { userId: studentId, lessonId: lesson.id, completed: false },
+    data: { completed: true, completedAt: now, score },
   });
 
   if (lesson.homework) {
@@ -89,7 +95,9 @@ async function finishLesson(
 /** Дитина завершила текстовий або відеоурок. */
 export async function completeLesson(formData: FormData) {
   const student = await requireUser("student");
-  const loaded = await loadAccessibleLesson(student.id, String(formData.get("lessonId") ?? ""));
+  const lessonId = LessonIdSchema.safeParse(formData.get("lessonId"));
+  if (!lessonId.success) return;
+  const loaded = await loadAccessibleLesson(student.id, lessonId.data);
   if (!loaded || loaded.lesson.type === "quiz") return; // тест зараховується лише через submitQuiz
   await finishLesson(student.id, loaded, null);
 }
@@ -97,12 +105,15 @@ export async function completeLesson(formData: FormData) {
 /** Дитина відповіла на тест: рахуємо бали на сервері (правильні відповіді в браузер не потрапляють). */
 export async function submitQuiz(formData: FormData) {
   const student = await requireUser("student");
-  const loaded = await loadAccessibleLesson(student.id, String(formData.get("lessonId") ?? ""));
+  const lessonId = LessonIdSchema.safeParse(formData.get("lessonId"));
+  if (!lessonId.success) return;
+  const loaded = await loadAccessibleLesson(student.id, lessonId.data);
   if (!loaded || loaded.lesson.type !== "quiz") return;
   const { questions } = parseLessonContent(loaded.lesson.type, loaded.lesson.content);
   const answers = questions.map((_, i) => {
     const v = formData.get(`q${i}`);
-    return v === null ? -1 : Number(v);
+    const n = v === null ? -1 : Number(v);
+    return Number.isInteger(n) ? n : -1;
   });
   const result = gradeQuiz(questions, answers);
   const score = result.total ? Math.round((result.correct / result.total) * 100) : 100;
@@ -111,32 +122,43 @@ export async function submitQuiz(formData: FormData) {
     await prisma.progress.upsert({
       where: { userId_lessonId: { userId: student.id, lessonId: loaded.lesson.id } },
       create: { userId: student.id, lessonId: loaded.lesson.id, completed: false, score },
-      update: { score }, // уже пройдений тест не "розпроходиться" через невдалу повторну спробу
+      update: {},
+    });
+    // Уже пройдений тест не "розпроходиться" і не втрачає бал через невдалу повторну спробу
+    await prisma.progress.updateMany({
+      where: { userId: student.id, lessonId: loaded.lesson.id, completed: false },
+      data: { score },
     });
     redirect(`/learn/${loaded.course.slug}/${loaded.lesson.order}?quiz=${result.correct}-${result.total}`);
   }
   await finishLesson(student.id, loaded, score);
 }
 
+/** Здача домашки. Перездача дозволена до перевірки; після `reviewed` — ні. */
 export async function submitHomework(formData: FormData) {
   const student = await requireUser("student");
-  const submissionId = String(formData.get("homeworkId") ?? "");
-  const answer = String(formData.get("answer") ?? "").trim().slice(0, 10000);
-  if (!answer) return;
-  const sub = await prisma.submission.findFirst({ where: { id: submissionId, userId: student.id } });
-  if (!sub || sub.status === "reviewed") return;
+  const parsed = SubmitHomeworkSchema.safeParse({
+    homeworkId: formData.get("homeworkId"),
+    answer: formData.get("answer"),
+  });
+  if (!parsed.success) return;
+  // Перевірка власника: шукаємо роботу лише серед робіт цього учня
+  const sub = await prisma.submission.findFirst({ where: { id: parsed.data.homeworkId, userId: student.id } });
+  if (!sub || !canSubmitHomework(sub.status)) return;
 
   // Без викладача (Простий/Середній) домашка зараховується одразу
   const now = new Date();
-  await prisma.submission.update({
-    where: { id: sub.id },
+  // Атомарно: якщо викладач встиг перевірити між читанням і записом, нічого не змінюємо
+  const { count } = await prisma.submission.updateMany({
+    where: { id: sub.id, userId: student.id, status: { not: "reviewed" } },
     data: {
-      answer,
+      answer: parsed.data.answer,
       submittedAt: now,
       status: sub.needsTeacher ? "submitted" : "reviewed",
       reviewedAt: sub.needsTeacher ? null : now,
     },
   });
+  if (!count) return;
   revalidatePath("/cabinet/student");
   revalidatePath("/learn", "layout");
 }

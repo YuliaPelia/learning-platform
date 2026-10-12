@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/db";
 import type { Plan as PlanRow, Subscription } from "@/generated/prisma/client";
 import { canAccessLesson, findCoveringSubscription, isSubscriptionLive, type AccessReason, type SubscriptionLike } from "./access";
-import { computeBadges, levelFromXp, streakDays } from "./gamification";
+import { computeBadges, levelFromXp, streakDays, totalXp } from "./gamification";
 import { PLANS, type Plan, type PlanId } from "./plans";
 
 /** Підписка з бази → форма, з якою працюють чисті правила доступу (access.ts). */
@@ -108,7 +108,7 @@ export async function getStudentOverview(studentId: string) {
   const subs = await getStudentSubscriptions(studentId);
   const plan = bestLivePlan(subs);
 
-  const xp = progress.reduce((s, p) => s + p.lesson.xp, 0) + homework.reduce((s, h) => s + (h.status !== "pending" ? 50 : 0), 0);
+  const xp = totalXp(progress.map((p) => p.lesson.xp), homework.filter((h) => h.status !== "pending").length);
   const level = levelFromXp(xp);
   const activity = [
     ...progress.map((p) => p.completedAt ?? p.updatedAt),

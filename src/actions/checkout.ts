@@ -9,7 +9,7 @@ import { requireUser } from "@/lib/dal";
 import { toAccessSub } from "@/lib/learning";
 import { LEGAL_VERSION, PLANS, PLAN_RANK } from "@/lib/plans";
 import { requestMeta } from "@/lib/request";
-import { CheckoutSchema, firstError, keepValues, type FormState } from "@/lib/validation";
+import { CancelSubscriptionSchema, CheckoutSchema, firstError, keepValues, type FormState } from "@/lib/validation";
 import { getWfpConfig, removeRegularPayment } from "@/lib/wayforpay";
 
 /** Крок 1 оплати: перевіряємо форму, записуємо згоди, створюємо підписку "очікує оплату". */
@@ -68,20 +68,29 @@ export async function startCheckout(_prev: FormState, formData: FormData): Promi
   redirect(`/checkout/${orderReference}`);
 }
 
-/** Скасування: зупиняємо регулярні списання, доступ лишається до кінця оплаченого місяця. */
-export async function cancelSubscription(formData: FormData) {
+/**
+ * Скасування: зупиняємо регулярні списання, доступ лишається до кінця оплаченого місяця.
+ * Якщо WayForPay не підтвердив REMOVE, статус не змінюємо — інакше картку продовжать списувати
+ * при "скасованій" підписці.
+ */
+export async function cancelSubscription(_prev: FormState, formData: FormData): Promise<FormState> {
   const parent = await requireUser("parent");
-  const id = String(formData.get("subscriptionId") ?? "");
-  const sub = await prisma.subscription.findFirst({ where: { id, userId: parent.id } });
-  if (!sub || sub.status === "canceled") return;
+  const parsed = CancelSubscriptionSchema.safeParse({ subscriptionId: formData.get("subscriptionId") });
+  if (!parsed.success) return { error: firstError(parsed.error) };
+  const sub = await prisma.subscription.findFirst({ where: { id: parsed.data.subscriptionId, userId: parent.id } });
+  if (!sub || sub.status === "canceled") return {};
 
   const cfg = getWfpConfig();
   if (cfg && sub.status !== "pending") {
     const ok = await removeRegularPayment(cfg, sub.orderReference).catch(() => false);
-    if (!ok) console.error("Не вдалося скасувати регулярний платіж у WayForPay — перевірте WAYFORPAY_MERCHANT_PASSWORD", sub.orderReference);
+    if (!ok) {
+      console.error("Не вдалося скасувати регулярний платіж у WayForPay — підписку не скасовано", sub.orderReference);
+      return { error: "Не вдалося скасувати підписку в платіжній системі. Спробуйте пізніше або напишіть у підтримку — гроші не списуватимуться повторно лише після успішного скасування." };
+    }
   }
   await prisma.subscription.update({ where: { id: sub.id }, data: { status: "canceled", canceledAt: new Date() } });
   revalidatePath("/cabinet/parent");
+  return { ok: true };
 }
 
 /** ЛИШЕ для розробки: імітує успішну оплату без WayForPay. */

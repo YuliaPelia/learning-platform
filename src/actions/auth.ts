@@ -5,7 +5,8 @@ import { prisma } from "@/db";
 import { homeFor } from "@/lib/dal";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { LEGAL_VERSION } from "@/lib/plans";
-import { requestMeta } from "@/lib/request";
+import { LOGIN_LIMITS, ipKey, loginKey, lockedMessage, lockedMinutes, recordFailure, resetFailures } from "@/lib/rate-limit";
+import { clientIp, requestMeta } from "@/lib/request";
 import { createSession, deleteSession } from "@/lib/session";
 import { LoginSchema, RegisterSchema, firstError, keepValues, type FormState } from "@/lib/validation";
 
@@ -45,10 +46,23 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
   if (!parsed.success) return { error: firstError(parsed.error), values: keepValues(formData) };
   const { login, password } = parsed.data;
 
+  // Спершу перевіряємо блокування (за логіном і за IP) — до будь-якої роботи з паролем
+  // Невідомий IP (немає довірених заголовків) — ліміт за IP не застосовуємо, лишається лише за логіном
+  const ip = await clientIp();
+  const lKey = loginKey(login);
+  const iKey = ip ? ipKey(ip) : null;
+  const locked = await lockedMinutes(iKey ? [lKey, iKey] : [lKey]);
+  if (locked) return { error: lockedMessage(locked), values: keepValues(formData) };
+
   const user = await prisma.user.findUnique({ where: { login } });
   // Однакове повідомлення для "немає користувача" і "невірний пароль" — щоб не підказувати зловмиснику
-  if (!user || !(await verifyPassword(password, user.passwordHash))) return { error: "Невірний логін або пароль", values: keepValues(formData) };
+  if (!user || !(await verifyPassword(password, user.passwordHash))) {
+    await recordFailure(lKey, LOGIN_LIMITS.maxPerLogin);
+    if (iKey) await recordFailure(iKey, LOGIN_LIMITS.maxPerIp);
+    return { error: "Невірний логін або пароль", values: keepValues(formData) };
+  }
 
+  await resetFailures(lKey);
   await createSession(user.id, user.role);
   redirect(safeNext(formData.get("next")) ?? homeFor(user.role));
 }

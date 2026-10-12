@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/db";
-import { cancelSubscription } from "@/actions/checkout";
-import { deleteChild } from "@/actions/children";
 import { AddChildForm } from "@/components/add-child-form";
+import { CancelSubscriptionForm, DeleteChildForm } from "@/components/parent-forms";
 import { CabinetShell, Notice, StatusBadge } from "@/components/cabinet-shell";
 import { isSubscriptionLive } from "@/lib/access";
 import { getChildren, requireUser } from "@/lib/dal";
@@ -85,6 +84,12 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
               <Stat label="Рівень" value={`${o.level.level} · ${o.level.title}`} />
               <Stat label="Серія днів" value={String(o.streak)} />
             </div>
+            {o.lessonsCompleted === 0 && (
+              <p className="text-muted">{kid.name} ще не пройшов(-ла) жодного уроку — прогрес з’явиться після першого уроку.</p>
+            )}
+            {!o.plan && (
+              <p className="text-muted">Для {kid.name} немає активної підписки: доступні 2 безкоштовні уроки кожного курсу. <Link href="/pricing" className="text-accent underline">Обрати тариф</Link></p>
+            )}
             <div className="card flex flex-col gap-3.5 px-8 py-7">
               <h3 className="text-[19px] font-bold">Домашки та коментарі викладача</h3>
               {o.homework.length === 0 && <p className="text-muted">Домашок поки немає.</p>}
@@ -145,10 +150,7 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
                   <Link href={`/checkout/${sub.orderReference}`} className="btn-primary h-10">Оплатити</Link>
                 )}
                 {(sub.status === "active" || sub.status === "past_due" || sub.status === "pending") && (
-                  <form action={cancelSubscription}>
-                    <input type="hidden" name="subscriptionId" value={sub.id} />
-                    <button className="btn-ghost h-10">Скасувати</button>
-                  </form>
+                  <CancelSubscriptionForm subscriptionId={sub.id} />
                 )}
               </div>
             </div>
@@ -210,11 +212,7 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
               {kids.map((k) => (
                 <details key={k.id} className="rounded-xl border border-danger/40 px-4 py-2">
                   <summary className="cursor-pointer text-danger">Видалити профіль «{k.name}»</summary>
-                  <form action={deleteChild} className="mt-3 flex flex-col gap-2">
-                    <input type="hidden" name="childId" value={k.id} />
-                    <span className="text-sm text-muted">Точно видалити? Прогрес і домашки буде втрачено.</span>
-                    <button className="btn h-10 bg-danger/15 text-danger hover:bg-danger/25">Так, видалити назавжди</button>
-                  </form>
+                  <DeleteChildForm childId={k.id} />
                 </details>
               ))}
             </div>

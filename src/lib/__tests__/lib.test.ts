@@ -205,3 +205,31 @@ describe("гроші", () => {
     expect(formatUah(44950).replace(/\s/g, " ")).toBe("449,50 грн");
   });
 });
+
+describe("стани підписки (access.ts)", () => {
+  const paid = { courseId: "python", subscriptions: [] as SubscriptionLike[], courseStatus: "published" as const, previousLessonCompleted: true, lessonOrder: 3, now: NOW };
+  const access = (s: SubscriptionLike) => canAccessLesson({ ...paid, subscriptions: [s] });
+
+  it("active з майбутнім кінцем — доступ; з минулим — ні", () => {
+    expect(access(sub({ status: "active", currentPeriodEnd: inDays(5) }))).toBe("ok");
+    expect(access(sub({ status: "active", currentPeriodEnd: inDays(-1) }))).toBe("needs_subscription");
+  });
+  it("active без дати кінця — без доступу", () => {
+    expect(access(sub({ status: "active", currentPeriodEnd: null }))).toBe("needs_subscription");
+  });
+  it("pending — без доступу", () => {
+    expect(access(sub({ status: "pending", currentPeriodEnd: inDays(5) }))).toBe("needs_subscription");
+  });
+  it("canceled — доступ до кінця періоду, потім ні", () => {
+    expect(access(sub({ status: "canceled", currentPeriodEnd: inDays(1) }))).toBe("ok");
+    expect(access(sub({ status: "canceled", currentPeriodEnd: inDays(-1) }))).toBe("needs_subscription");
+  });
+  it("past_due — пільга, потім закриття", () => {
+    expect(access(sub({ status: "past_due", currentPeriodEnd: inDays(-1) }))).toBe("ok");
+    expect(access(sub({ status: "past_due", currentPeriodEnd: inDays(-10) }))).toBe("needs_subscription");
+  });
+  it("при простроченій підписці 2 безкоштовні уроки лишаються", () => {
+    const expired = sub({ status: "canceled", currentPeriodEnd: inDays(-30) });
+    expect(canAccessLesson({ ...paid, lessonOrder: 2, subscriptions: [expired] })).toBe("ok");
+  });
+});

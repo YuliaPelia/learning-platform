@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/dal";
 import { hashPassword } from "@/lib/password";
 import { LEGAL_VERSION } from "@/lib/plans";
 import { requestMeta } from "@/lib/request";
-import { ChildSchema, firstError, keepValues, type FormState } from "@/lib/validation";
+import { ChildIdSchema, ChildSchema, firstError, keepValues, type FormState } from "@/lib/validation";
 import { getWfpConfig, removeRegularPayment } from "@/lib/wayforpay";
 
 export async function addChild(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -38,20 +38,31 @@ export async function addChild(_prev: FormState, formData: FormData): Promise<Fo
  * Прогрес і домашки видаляються каскадно; платежі й згоди залишаються (облік і доказ),
  * але більше не пов'язані з дитиною. Діючі регулярні списання скасовуються.
  */
-export async function deleteChild(formData: FormData) {
+export async function deleteChild(_prev: FormState, formData: FormData): Promise<FormState> {
   const parent = await requireUser("parent");
-  const childId = String(formData.get("childId") ?? "");
+  // Не-UUID відсікаємо до звернення до БД
+  const parsedId = ChildIdSchema.safeParse(formData.get("childId"));
+  if (!parsedId.success) return {};
+  const childId = parsedId.data;
   const child = await prisma.user.findFirst({ where: { id: childId, parentId: parent.id } });
-  if (!child) return;
+  if (!child) return {};
 
   const subs = await prisma.subscription.findMany({
     where: { studentId: child.id, status: { in: ["active", "past_due"] } },
   });
   const cfg = getWfpConfig();
   for (const s of subs) {
-    if (cfg) await removeRegularPayment(cfg, s.orderReference).catch(() => false);
+    if (cfg) {
+      const ok = await removeRegularPayment(cfg, s.orderReference).catch(() => false);
+      if (!ok) {
+        // Не видаляємо дитину, поки WayForPay не підтвердив зупинку списань
+        console.error("Не вдалося скасувати регулярний платіж — профіль дитини не видалено", s.orderReference);
+        return { error: "Не вдалося скасувати підписку в платіжній системі, тож профіль не видалено. Спробуйте пізніше або напишіть у підтримку." };
+      }
+    }
     await prisma.subscription.update({ where: { id: s.id }, data: { status: "canceled", canceledAt: new Date() } });
   }
   await prisma.user.delete({ where: { id: child.id } });
   revalidatePath("/cabinet/parent");
+  return { ok: true };
 }
