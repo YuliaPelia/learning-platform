@@ -66,7 +66,7 @@ import { login } from "@/actions/auth";
 import { clientIpFrom, trustProxyHeaders } from "@/lib/request";
 import { LoginSchema } from "@/lib/validation";
 import { LOGIN_LIMITS, deleteExpiredAttempts, ipKey, loginKey, lockedMinutes, recordFailure, resetFailures } from "@/lib/rate-limit";
-import { canAccess, requiredRole } from "@/lib/roles";
+import { allowedRoles, canAccess } from "@/lib/roles";
 
 const form = (f: Record<string, string>) => {
   const fd = new FormData();
@@ -211,9 +211,13 @@ describe("ролі", () => {
   });
 
   it("/learn і /cabinet доступні будь-якій ролі; схожі префікси не збігаються", () => {
-    expect(requiredRole("/learn/python/1")).toBeNull();
+    expect(allowedRoles("/learn/python/1")).toBeNull();
     expect(canAccess("student", "/cabinet")).toBe(true);
-    expect(requiredRole("/administrator")).toBeNull();
+    expect(allowedRoles("/administrator")).toBeNull();
+    expect(canAccess("teacher", "/teacher/videos")).toBe(true);
+    expect(canAccess("admin", "/teacher/videos")).toBe(true);
+    expect(canAccess("parent", "/teacher/videos")).toBe(false);
+    expect(canAccess("student", "/teacher/videos")).toBe(false);
   });
 });
 

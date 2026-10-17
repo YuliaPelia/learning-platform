@@ -6,6 +6,7 @@ import { prisma } from "@/db";
 import type { Prisma } from "@/generated/prisma/client";
 import { requireUser } from "@/lib/dal";
 import { normalizeVideoUrl } from "@/lib/lesson-content";
+import { removeLessonAndShift } from "@/lib/lesson-order";
 import { AdminIdSchema, CourseSchema, LessonSchema, QuizQuestionsSchema, firstError, keepValues, type FormState } from "@/lib/validation";
 
 /** Курси й уроки показуються на багатьох сторінках (каталог, курс, урок, кабінети) — оновлюємо все. */
@@ -139,16 +140,7 @@ export async function deleteLesson(formData: FormData) {
   if (!id.success) return;
   const lesson = await prisma.lesson.findUnique({ where: { id: id.data } });
   if (!lesson) return;
-  await prisma.$transaction(async (tx) => {
-    await tx.lesson.delete({ where: { id: lesson.id } });
-    const after = await tx.lesson.findMany({
-      where: { courseId: lesson.courseId, order: { gt: lesson.order } },
-      orderBy: { order: "asc" },
-      select: { id: true, order: true },
-    });
-    // По одному й за зростанням — інакше спрацює унікальність (course_id, order)
-    for (const l of after) await tx.lesson.update({ where: { id: l.id }, data: { order: l.order - 1 } });
-  });
+  await prisma.$transaction((tx) => removeLessonAndShift(tx, lesson));
   revalidateContent();
   redirect(`/admin/courses/${lesson.courseId}`);
 }

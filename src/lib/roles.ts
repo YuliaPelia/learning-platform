@@ -1,23 +1,25 @@
 /** Яка роль має доступ до яких розділів. Чиста функція — використовує proxy і тести. */
 export type AppRole = "parent" | "student" | "teacher" | "admin";
 
-const RULES: { prefix: string; role: AppRole }[] = [
-  { prefix: "/cabinet/parent", role: "parent" },
-  { prefix: "/cabinet/student", role: "student" },
-  { prefix: "/checkout", role: "parent" },
-  { prefix: "/teacher", role: "teacher" },
-  { prefix: "/admin", role: "admin" },
+/** Конкретніші префікси — раніше загальних (/teacher/videos раніше /teacher). */
+const RULES: { prefix: string; roles: AppRole[] }[] = [
+  { prefix: "/cabinet/parent", roles: ["parent"] },
+  { prefix: "/cabinet/student", roles: ["student"] },
+  { prefix: "/checkout", roles: ["parent"] },
+  { prefix: "/teacher/videos", roles: ["teacher", "admin"] },
+  { prefix: "/teacher", roles: ["teacher"] },
+  { prefix: "/admin", roles: ["admin"] },
 ];
 
-/** Роль, якої вимагає шлях (null — підійде будь-яка авторизована). */
-export function requiredRole(pathname: string): AppRole | null {
+/** Ролі, яким дозволено шлях (null — підійде будь-яка авторизована). */
+export function allowedRoles(pathname: string): AppRole[] | null {
   const rule = RULES.find((r) => pathname === r.prefix || pathname.startsWith(r.prefix + "/"));
-  return rule?.role ?? null;
+  return rule?.roles ?? null;
 }
 
 export function canAccess(role: string, pathname: string): boolean {
-  const need = requiredRole(pathname);
-  return !need || need === role;
+  const roles = allowedRoles(pathname);
+  return !roles || roles.some((r) => r === role);
 }
 
 export function homePath(role: string) {

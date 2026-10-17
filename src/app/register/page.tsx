@@ -23,7 +23,7 @@ export default async function RegisterPage({ searchParams }: PageProps<"/registe
           <ol className="flex flex-col gap-3 text-soft">
             <li><span className="font-mono text-accent">01</span> Створіть акаунт</li>
             <li><span className="font-mono text-accent">02</span> Додайте дитину (ім’я, рік народження, логін)</li>
-            <li><span className="font-mono text-accent">03</span> Дитина входить і починає навчання</li>
+            <li><span className="font-mono text-accent">03</span> Дитина входить і починає навчання, а ви відстежуєте її прогрес</li>
           </ol>
         </div>
         <div className="card p-8">

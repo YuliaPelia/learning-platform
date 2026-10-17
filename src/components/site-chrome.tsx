@@ -30,7 +30,12 @@ export async function SiteHeader() {
             <>
               <Link href={homeFor(user.role)} className="btn-ghost h-11">Кабінет</Link>
               <form action={logout}>
-                <button className="h-11 px-2 text-sm text-muted hover:text-text">Вийти</button>
+                <button className="group relative inline-flex cursor-pointer items-center gap-1.5 py-1 text-sm text-muted transition-colors duration-200 hover:text-accent focus-visible:text-accent after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-accent after:transition-transform after:duration-300 hover:after:scale-x-100 focus-visible:after:scale-x-100 h-11 px-2">
+                  Вийти
+                  <svg aria-hidden viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1 group-focus-visible:translate-x-1">
+                <path d="M4 10h11m0 0-4-4m4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+                </button>
               </form>
             </>
           ) : (

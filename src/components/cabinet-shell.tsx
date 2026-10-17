@@ -2,6 +2,8 @@ import Link from "next/link";
 import { logout } from "@/actions/auth";
 import { Logo } from "@/components/site-chrome";
 
+export { Notice } from "@/components/notice";
+
 type NavItem = { href: string; label: string };
 
 export function CabinetShell({
@@ -37,8 +39,11 @@ export function CabinetShell({
             <span className="text-[13px] text-muted">{roleLabel}</span>
           </div>
           <form action={logout}>
-            <button className="text-sm text-muted hover:text-text" aria-label="Вийти з кабінету">
+            <button className="group relative inline-flex cursor-pointer items-center gap-1.5 py-1 text-sm text-muted transition-colors duration-200 hover:text-accent focus-visible:text-accent after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-accent after:transition-transform after:duration-300 hover:after:scale-x-100 focus-visible:after:scale-x-100" aria-label="Вийти з кабінету">
               Вийти
+              <svg aria-hidden viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1 group-focus-visible:translate-x-1">
+                <path d="M4 10h11m0 0-4-4m4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
           </form>
         </div>
@@ -46,12 +51,6 @@ export function CabinetShell({
       <main className="flex min-w-0 flex-1 flex-col gap-7 px-4 py-8 md:px-12 md:py-9">{children}</main>
     </div>
   );
-}
-
-export function Notice({ tone = "info", children }: { tone?: "info" | "success" | "warn"; children: React.ReactNode }) {
-  const cls =
-    tone === "success" ? "border-accent/50 bg-[#1b2a2a]" : tone === "warn" ? "border-amber/50 bg-[#2a2414]" : "border-line-2 bg-surface-2";
-  return <div className={`rounded-2xl border px-5 py-4 leading-relaxed ${cls}`}>{children}</div>;
 }
 
 export function StatusBadge({ tone, children }: { tone: "good" | "wait" | "muted" | "bad"; children: React.ReactNode }) {

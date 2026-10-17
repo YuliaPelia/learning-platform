@@ -94,6 +94,16 @@ export const LessonSchema = z.object({
   dueDays: z.coerce.number().int().min(1).max(60),
 });
 
+/** Відеоурок, який додають викладач або адмін: тип зафіксовано — video. */
+export const VideoLessonSchema = z.object({
+  courseId: z.uuid({ error: "Оберіть курс" }),
+  title: z.string().trim().min(2, { error: "Вкажіть назву уроку" }).max(120),
+  summary: z.string().trim().max(200),
+  xp: z.coerce.number({ error: "Вкажіть XP" }).int().min(0).max(1000),
+  videoUrl: z.string().trim().min(1, { error: "Вкажіть посилання на відео" }).max(500),
+  markdown: z.string().max(50000),
+});
+
 /** Перевірка роботи викладачем. Оцінка й коментар не відхиляються, а нормалізуються (клемпінг до maxScore — в action). */
 export const ReviewHomeworkSchema = z.object({
   homeworkId: z.uuid(),

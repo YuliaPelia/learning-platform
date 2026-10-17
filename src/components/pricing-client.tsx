@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { startCheckout } from "@/actions/checkout";
 import { IconCheck, IconLock, IconX } from "@/components/icons";
+import { SelectField } from "@/components/select-field";
 import type { Plan, PlanId } from "@/lib/plans";
 
 type Props = {
@@ -117,26 +118,26 @@ export function PricingClient({ plans, features, initialPlan, viewer, childrenLi
               <label htmlFor="studentId" className="label">
                 Для кого
               </label>
-              <select id="studentId" name="studentId" className="field" required defaultValue={state?.values?.studentId}>
-                {childrenList.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+              <SelectField
+                id="studentId"
+                name="studentId"
+                required
+                defaultValue={state?.values?.studentId}
+                options={childrenList.map((c) => ({ value: c.id, label: c.name }))}
+              />
             </div>
             {!plan.allCourses && (
               <div>
                 <label htmlFor="courseId" className="label">
                   Курс
                 </label>
-                <select id="courseId" name="courseId" className="field" required defaultValue={state?.values?.courseId}>
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.title}
-                    </option>
-                  ))}
-                </select>
+                <SelectField
+                  id="courseId"
+                  name="courseId"
+                  required
+                  defaultValue={state?.values?.courseId}
+                  options={courses.map((c) => ({ value: c.id, label: c.title }))}
+                />
               </div>
             )}
             <label className="flex cursor-pointer items-start gap-3.5 leading-relaxed">

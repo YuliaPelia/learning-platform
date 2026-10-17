@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { saveCourse, saveLesson } from "@/actions/admin";
 import { CATEGORY_LABELS } from "@/lib/format";
+import { SelectField } from "@/components/select-field";
 import type { QuizQuestion } from "@/lib/lesson-content";
 
 function ErrorBox({ message }: { message?: string }) {
@@ -59,11 +60,12 @@ export function CourseForm({
       </div>
       <div>
         <label htmlFor="course-category" className="label">Категорія</label>
-        <select id="course-category" name="category" className="field" defaultValue={v.category}>
-          {Object.entries(CATEGORY_LABELS).map(([code, label]) => (
-            <option key={code} value={code}>{label}</option>
-          ))}
-        </select>
+        <SelectField
+          id="course-category"
+          name="category"
+          defaultValue={v.category}
+          options={Object.entries(CATEGORY_LABELS).map(([code, label]) => ({ value: code, label }))}
+        />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -77,18 +79,24 @@ export function CourseForm({
       </div>
       <div>
         <label htmlFor="course-status" className="label">Статус</label>
-        <select id="course-status" name="status" className="field" defaultValue={v.status}>
-          <option value="soon">Скоро (уроки закриті)</option>
-          <option value="published">Опубліковано</option>
-        </select>
+        <SelectField
+          id="course-status"
+          name="status"
+          defaultValue={v.status}
+          options={[
+            { value: "soon", label: "Скоро (уроки закриті)" },
+            { value: "published", label: "Опубліковано" },
+          ]}
+        />
       </div>
       <div>
         <label htmlFor="course-plan" className="label">Мінімальний тариф</label>
-        <select id="course-plan" name="minPlan" className="field" defaultValue={v.minPlan}>
-          {plans.map((p) => (
-            <option key={p.code} value={p.code}>{p.name}</option>
-          ))}
-        </select>
+        <SelectField
+          id="course-plan"
+          name="minPlan"
+          defaultValue={v.minPlan}
+          options={plans.map((p) => ({ value: p.code, label: p.name }))}
+        />
       </div>
       <div>
         <label htmlFor="course-sort" className="label">Порядок у каталозі</label>
@@ -154,11 +162,17 @@ export function LessonForm({
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label htmlFor="lesson-type" className="label">Тип уроку</label>
-          <select id="lesson-type" name="type" className="field" value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="text">Текстовий урок</option>
-            <option value="video">Відеоурок</option>
-            <option value="quiz">Тест</option>
-          </select>
+          <SelectField
+            id="lesson-type"
+            name="type"
+            value={type}
+            onChange={setType}
+            options={[
+              { value: "text", label: "Текстовий урок" },
+              { value: "video", label: "Відеоурок" },
+              { value: "quiz", label: "Тест" },
+            ]}
+          />
         </div>
         <div>
           <label htmlFor="lesson-xp" className="label">XP за проходження</label>
