@@ -19,7 +19,7 @@ export function CabinetShell({
 }) {
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      <aside className="flex flex-col gap-7 border-b border-[#242955] bg-deep px-5 py-6 lg:sticky lg:top-0 lg:h-screen lg:w-[272px] lg:shrink-0 lg:border-r lg:border-b-0">
+      <aside className="flex flex-col gap-7 border-b border-line bg-deep px-5 py-6 lg:sticky lg:top-0 lg:h-screen lg:w-[272px] lg:shrink-0 lg:border-r lg:border-b-0">
         <div className="px-2">
           <Logo small />
         </div>
@@ -31,7 +31,7 @@ export function CabinetShell({
           ))}
         </nav>
         <div className="mt-auto flex items-center gap-3 rounded-2xl bg-surface-2 p-3.5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2e3a2e] font-bold text-accent">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/10 font-bold text-accent">
             {user.name.slice(0, 1).toUpperCase()}
           </div>
           <div className="flex min-w-0 flex-1 flex-col">
@@ -55,8 +55,8 @@ export function CabinetShell({
 
 export function StatusBadge({ tone, children }: { tone: "good" | "wait" | "muted" | "bad"; children: React.ReactNode }) {
   const cls = {
-    good: "bg-[#1f3029] text-accent",
-    wait: "bg-[#3a2e14] text-amber",
+    good: "bg-good/10 text-good",
+    wait: "bg-amber/15 text-amber",
     muted: "bg-surface-2 text-muted",
     bad: "bg-danger/10 text-danger",
   }[tone];

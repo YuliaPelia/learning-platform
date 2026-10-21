@@ -17,7 +17,7 @@ export default async function LegalPage({ params }: PageProps<"/legal/[doc]">) {
   return (
     <PublicShell>
       <article className="mx-auto flex max-w-[820px] flex-col gap-6 px-4 py-14 md:px-6">
-        <p className="rounded-2xl border border-amber/50 bg-[#2a2414] px-5 py-4 text-amber">
+        <p className="rounded-2xl border border-amber/50 bg-amber/15 px-5 py-4 text-amber">
           ЧЕРНЕТКА. Перед запуском оплат цей документ має перевірити юрист. Дані у квадратних дужках — замінити реальними.
         </p>
         <h1 className="font-display text-3xl font-bold md:text-4xl">{d.title}</h1>

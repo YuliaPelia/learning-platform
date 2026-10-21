@@ -59,7 +59,7 @@ export default async function CoursePage({ params, searchParams }: PageProps<"/c
               <li key={lesson.id} className="card flex items-center gap-5 px-6 py-5">
                 <span
                   className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-mono font-bold ${
-                    done ? "bg-accent text-ink" : "bg-surface-2 text-soft"
+                    done ? "bg-accent text-white" : "bg-surface-2 text-soft"
                   }`}
                 >
                   {done ? <IconCheck size={18} /> : lesson.order}
@@ -69,7 +69,7 @@ export default async function CoursePage({ params, searchParams }: PageProps<"/c
                   <span className="text-muted">{lesson.summary}</span>
                 </div>
                 {lesson.order <= FREE_LESSONS ? (
-                  <span className="shrink-0 rounded-full bg-[#1b2a2a] px-3 py-1 text-[13px] font-bold text-accent">Безкоштовно</span>
+                  <span className="shrink-0 rounded-full bg-good/10 px-3 py-1 text-[13px] font-bold text-good">Безкоштовно</span>
                 ) : access === "needs_subscription" ? (
                   <IconLock className="shrink-0 text-faint" />
                 ) : null}

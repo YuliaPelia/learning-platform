@@ -16,7 +16,7 @@ export function Logo({ small = false }: { small?: boolean }) {
 export async function SiteHeader() {
   const user = await getCurrentUser();
   return (
-    <header className="border-b border-[#242955]">
+    <header className="border-b border-line">
       <div className="mx-auto flex h-[88px] max-w-[1200px] items-center justify-between gap-6 px-4 md:px-6">
         <Logo />
         <nav className="hidden gap-9 font-medium text-soft lg:flex" aria-label="Головне меню">
@@ -52,7 +52,7 @@ export async function SiteHeader() {
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-[#242955]">
+    <footer className="border-t border-line">
       <div className="mx-auto flex max-w-[1200px] flex-col gap-4 px-4 py-10 text-sm text-muted md:flex-row md:items-center md:justify-between md:px-6">
         <span>© ITCodeCraft · ФОП [ПІБ], РНОКПП [номер]</span>
         <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="Документи">

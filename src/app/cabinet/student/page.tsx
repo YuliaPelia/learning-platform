@@ -36,7 +36,7 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
           </p>
         </div>
         <div className="flex gap-3">
-          <div className="flex h-12 items-center gap-2 rounded-2xl bg-[#2a2340] px-4 font-bold text-amber">
+          <div className="flex h-12 items-center gap-2 rounded-2xl bg-amber/15 px-4 font-bold text-amber">
             <IconFlame /> {pluralDays(o.streak)} поспіль
           </div>
           <div className="flex h-12 items-center gap-2.5 rounded-2xl bg-surface-2 px-4 font-bold">
@@ -73,7 +73,7 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
                     <li key={it.lesson.id} className="flex items-center">
                       <span
                         className={`flex h-11 w-11 items-center justify-center rounded-full font-mono font-bold ${
-                          it.done ? "bg-accent text-ink" : current ? "border-2 border-accent text-accent" : "bg-surface-2 text-faint"
+                          it.done ? "bg-accent text-white" : current ? "border-2 border-accent text-accent" : "bg-surface-2 text-faint"
                         }`}
                         title={it.lesson.title}
                       >
@@ -107,11 +107,11 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
               {o.badges.map((b) => (
                 <div
                   key={b.id}
-                  className={`flex flex-col gap-1.5 rounded-2xl p-3.5 ${b.earned ? "bg-[#2a2340]" : "border border-dashed border-line-2 bg-[#1a1e3a]"}`}
+                  className={`flex flex-col gap-1.5 rounded-2xl p-3.5 ${b.earned ? "bg-amber/15" : "border border-dashed border-line-2 bg-surface-2"}`}
                   title={b.description}
                 >
                   {b.earned ? <IconStar size={24} className="text-amber" /> : <IconLock size={24} className="text-faint" />}
-                  <span className={`text-sm font-semibold ${b.earned ? "" : "text-[#8c91bc]"}`}>{b.title}</span>
+                  <span className={`text-sm font-semibold ${b.earned ? "" : "text-faint"}`}>{b.title}</span>
                 </div>
               ))}
             </div>
@@ -136,7 +136,7 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
             <Link
               key={h.id}
               href={`/learn/${h.courseSlug}/${h.lessonOrder}#homework`}
-              className="flex min-h-16 items-center justify-between gap-4 rounded-2xl bg-ink px-4.5 py-3 hover:bg-[#141835]"
+              className="flex min-h-16 items-center justify-between gap-4 rounded-2xl bg-ink px-4.5 py-3 hover:bg-line"
             >
               <div className="flex flex-col gap-1">
                 <span className="font-semibold">
@@ -158,8 +158,8 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
           ))}
         </section>
 
-        <section className="flex flex-col gap-3 rounded-3xl border border-line-2 bg-[#1b2144] p-7">
-          <span className="self-start rounded-full bg-[#3a2e14] px-2.5 py-1 text-xs font-bold text-amber">НОВИНКИ</span>
+        <section className="flex flex-col gap-3 rounded-3xl border border-line-2 bg-surface-2 p-7">
+          <span className="self-start rounded-full bg-amber/15 px-2.5 py-1 text-xs font-bold text-amber">НОВИНКИ</span>
           <h2 className="text-[19px] font-bold">Скоро: курс Next.js</h2>
           <p className="leading-relaxed text-muted">
             Зроби власний сайт, як справжні розробники. Учні з тарифом Преміум отримають доступ першими.

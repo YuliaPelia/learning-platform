@@ -106,7 +106,7 @@ export function CourseForm({
       <div className="flex flex-col gap-3 md:col-span-2">
         <ErrorBox message={state?.error} />
         {state?.ok && (
-          <p role="status" className="rounded-xl bg-[#1b2a2a] px-4 py-3 text-accent">Зміни збережено ✔</p>
+          <p role="status" className="rounded-xl bg-good/10 px-4 py-3 text-good">Зміни збережено ✔</p>
         )}
         <button type="submit" disabled={pending} className="btn-primary self-start">
           {pending ? "Зберігаємо…" : courseId ? "Зберегти курс" : "Створити курс"}
@@ -280,7 +280,7 @@ export function LessonForm({
           Є домашнє завдання
         </label>
         {!hasHomework && initial.hasHomework && (
-          <p className="rounded-xl bg-[#2a2414] px-4 py-3 text-amber">
+          <p className="rounded-xl bg-amber/15 px-4 py-3 text-amber">
             Після збереження домашку буде видалено
             {submissionsCount > 0 ? ` разом з відповідями та листуванням учнів (${submissionsCount})` : ""}.
           </p>

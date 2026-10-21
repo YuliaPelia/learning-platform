@@ -32,10 +32,10 @@ export function PricingClient({ plans, features, initialPlan, viewer, childrenLi
           return (
             <div
               key={p.id}
-              className={`flex flex-col gap-4.5 rounded-3xl px-8 pt-7 pb-9 ${selected ? "border-2 border-accent bg-[#1a1f3f]" : "border border-line bg-surface"}`}
+              className={`flex flex-col gap-4.5 rounded-3xl px-8 pt-7 pb-9 ${selected ? "border-2 border-accent bg-surface-2" : "border border-line bg-surface"}`}
             >
               <div className="h-7">
-                {p.popular && <span className="rounded-full bg-[#3a2e14] px-3 py-1 text-[13px] font-bold text-amber">Найпопулярніший</span>}
+                {p.popular && <span className="rounded-full bg-amber/15 px-3 py-1 text-[13px] font-bold text-amber">Найпопулярніший</span>}
               </div>
               <h2 className="font-display text-[26px] font-bold">{p.name}</h2>
               <p className="min-h-12 leading-relaxed text-muted">{p.description}</p>

@@ -27,7 +27,7 @@ export function MessageThread({
           {messages.map((m) => {
             const mine = m.author.id === viewerId;
             return (
-              <li key={m.id} className={`flex max-w-[85%] flex-col gap-1 rounded-2xl px-4 py-3 ${mine ? "self-end bg-[#1f3029]" : "self-start bg-ink"}`}>
+              <li key={m.id} className={`flex max-w-[85%] flex-col gap-1 rounded-2xl px-4 py-3 ${mine ? "self-end bg-good/10" : "self-start bg-ink"}`}>
                 <span className="text-[13px] text-muted">
                   {mine ? "Ви" : m.author.role === "teacher" ? `Викладач ${m.author.name}` : m.author.name} · {formatDateTime(m.createdAt)}
                 </span>

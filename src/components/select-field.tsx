@@ -118,7 +118,7 @@ export function SelectField({
           tabIndex={-1}
           autoFocus
           onKeyDown={onKeyDown}
-          className="absolute z-30 mt-2 max-h-72 w-full overflow-y-auto rounded-xl border border-line-2 bg-surface-2 p-1 shadow-2xl shadow-black/40 outline-none"
+          className="absolute z-30 mt-2 max-h-72 w-full overflow-y-auto rounded-xl border border-line-2 bg-surface-2 p-1 shadow-2xl shadow-[#4b2fb5]/20 outline-none"
         >
           {options.map((o, i) => {
             const isSelected = o.value === value;

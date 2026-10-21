@@ -33,7 +33,7 @@ export default async function PricingPage({ searchParams }: PageProps<"/pricing"
         <section className="flex flex-col items-center gap-4.5 pt-16 pb-10 text-center">
           <h1 className="font-display text-4xl font-bold tracking-tight md:text-5xl">Оберіть тариф</h1>
           <p className="text-xl text-soft">Оплата щомісяця. Скасувати можна будь-коли в кабінеті батьків.</p>
-          <div className="flex min-h-11 items-center gap-2.5 rounded-full border border-accent bg-[#1b2a2a] px-4.5 font-semibold">
+          <div className="flex min-h-11 items-center gap-2.5 rounded-full border border-accent bg-good/10 px-4.5 font-semibold">
             <IconGift size={18} className="text-accent" />
             Перші 2 уроки будь-якого курсу — безкоштовно, без картки
           </div>

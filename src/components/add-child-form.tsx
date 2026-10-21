@@ -42,7 +42,7 @@ export function AddChildForm() {
         <p role="alert" className="rounded-xl bg-danger/10 px-4 py-3 text-danger md:col-span-2">{state.error}</p>
       )}
       {state?.ok && (
-        <p role="status" className="rounded-xl bg-[#1b2a2a] px-4 py-3 text-accent md:col-span-2">
+        <p role="status" className="rounded-xl bg-good/10 px-4 py-3 text-good md:col-span-2">
           Профіль створено! Дитина може увійти зі своїм логіном і паролем.
         </p>
       )}

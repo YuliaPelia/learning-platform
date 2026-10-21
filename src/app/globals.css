@@ -1,24 +1,26 @@
 @import "tailwindcss";
 
 /*
-  Дизайн-токени ITCodeCraft — ті самі кольори, що в макетах.
-  Використання в класах: bg-ink, text-muted, border-line, text-accent тощо.
+  Дизайн-токени ITCodeCraft — світла «lavender»-тема з фіолетово-рожевими градієнтами.
+  Назви токенів ті самі, що й раніше: bg-ink (фон сторінки), bg-surface (картка), text-accent тощо.
 */
 @theme {
-  --color-ink: #0f1226;
-  --color-deep: #131733;
-  --color-surface: #171b36;
-  --color-surface-2: #1e2345;
-  --color-line: #2c3160;
-  --color-line-2: #3a4078;
-  --color-text: #f2f3fa;
-  --color-soft: #c3c7e0;
-  --color-muted: #a6abcb;
-  --color-faint: #6e73a3;
-  --color-accent: #7ce38b;
-  --color-amber: #ffb547;
-  --color-violet: #9c8cff;
-  --color-danger: #ff8a8a;
+  --color-ink: #f6f3ff;
+  --color-deep: #efeaff;
+  --color-surface: #ffffff;
+  --color-surface-2: #f3efff;
+  --color-line: #e7e0fb;
+  --color-line-2: #d4c9f6;
+  --color-text: #1d1747;
+  --color-soft: #463f78;
+  --color-muted: #6a6397;
+  --color-faint: #8d87b4;
+  --color-accent: #6d4aff;
+  --color-pink: #c155e8;
+  --color-good: #0f9d6b;
+  --color-amber: #b86300;
+  --color-violet: #7c5cff;
+  --color-danger: #d92d52;
 
   --font-display: "Unbounded", system-ui, sans-serif;
   --font-sans: "Onest", system-ui, sans-serif;
@@ -29,6 +31,15 @@ html {
   background: var(--color-ink);
   color: var(--color-text);
   scroll-behavior: smooth;
+}
+
+/* М'які розмиті «плями» на фоні, як на макеті */
+body {
+  background:
+    radial-gradient(60rem 40rem at 105% -10%, rgb(193 85 232 / 0.14), transparent 60%),
+    radial-gradient(50rem 40rem at -10% 40%, rgb(109 74 255 / 0.10), transparent 60%),
+    var(--color-ink);
+  background-attachment: fixed;
 }
 
 body {
@@ -43,20 +54,24 @@ body {
 
 /* Власні класи-утиліти (у Tailwind v4 — через @utility, щоб їх можна було комбінувати) */
 @utility btn {
-  @apply inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+  @apply inline-flex h-12 items-center justify-center gap-2 rounded-full px-6 font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60;
 }
 @utility btn-primary {
-  @apply btn bg-accent text-ink hover:bg-[#95eca2];
+  @apply btn text-white shadow-lg shadow-accent/30 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent/40;
+  background-image: linear-gradient(100deg, #6d4aff 0%, #9a5cf2 55%, #c155e8 100%);
 }
 @utility btn-ghost {
-  @apply btn border border-line-2 text-text hover:bg-surface-2;
+  @apply btn border border-line-2 bg-white/70 text-accent hover:bg-white hover:border-accent;
 }
 @utility card {
-  @apply rounded-3xl border border-line bg-surface;
+  @apply rounded-3xl border border-line bg-surface shadow-[0_10px_30px_-12px_rgb(109_74_255/0.22)];
 }
 @utility field {
-  @apply h-12 w-full rounded-xl border border-line-2 bg-ink px-4 text-text placeholder:text-faint focus:border-accent focus:outline-none;
+  @apply h-12 w-full rounded-2xl border border-line-2 bg-white px-4 text-text placeholder:text-faint focus:border-accent focus:ring-4 focus:ring-accent/15 focus:outline-none;
 }
 @utility label {
   @apply mb-1.5 block text-sm font-medium text-soft;
+}
+@utility bg-brand {
+  background-image: linear-gradient(135deg, #6d4aff 0%, #9a5cf2 55%, #c155e8 100%);
 }

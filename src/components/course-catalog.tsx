@@ -39,7 +39,7 @@ export function CourseCatalog({ groups }: { groups: CatalogGroup[] }) {
               onClick={() => setFilter(f.id)}
               aria-pressed={filter === f.id}
               className={`h-11 rounded-xl border px-4 font-semibold ${
-                filter === f.id ? "border-accent bg-accent text-ink" : "border-line-2 text-soft hover:bg-surface-2"
+                filter === f.id ? "border-accent bg-accent text-white" : "border-line-2 text-soft hover:bg-surface-2"
               }`}
             >
               {f.label}
@@ -52,7 +52,7 @@ export function CourseCatalog({ groups }: { groups: CatalogGroup[] }) {
           <div key={g.id} className="card flex min-h-[236px] flex-col gap-4 p-7">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-[22px] font-bold">{g.title}</h3>
-              <span className="shrink-0 rounded-full bg-[#262b52] px-3 py-1 text-[13px] whitespace-nowrap text-soft">{g.age}</span>
+              <span className="shrink-0 rounded-full bg-line px-3 py-1 text-[13px] whitespace-nowrap text-soft">{g.age}</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {g.courses.map((c) =>
@@ -60,7 +60,7 @@ export function CourseCatalog({ groups }: { groups: CatalogGroup[] }) {
                   <Link
                     key={c.slug}
                     href={`/courses/${c.slug}`}
-                    className="flex h-9 items-center rounded-[10px] border border-accent/60 px-3 text-[15px] hover:bg-accent hover:text-ink"
+                    className="flex h-9 items-center rounded-[10px] border border-accent/60 px-3 text-[15px] hover:bg-accent hover:text-white"
                   >
                     {c.title}
                   </Link>

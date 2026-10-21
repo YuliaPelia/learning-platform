@@ -75,7 +75,7 @@ export default async function AdminLessonPage({ params }: PageProps<"/admin/cour
               {qi + 1}. {q.q}
             </p>
             {q.options.map((opt, oi) => (
-              <div key={oi} className={`flex items-center gap-3 rounded-xl px-4 py-3 ${oi === q.answer ? "bg-[#1f3029] text-accent" : "bg-ink"}`}>
+              <div key={oi} className={`flex items-center gap-3 rounded-xl px-4 py-3 ${oi === q.answer ? "bg-good/10 text-good" : "bg-ink"}`}>
                 {oi === q.answer && <IconCheck size={16} />}
                 <span>{opt}</span>
                 {oi === q.answer && <span className="sr-only">(правильна відповідь)</span>}

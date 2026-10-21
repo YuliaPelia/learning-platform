@@ -44,81 +44,121 @@ export default async function HomePage() {
   return (
     <PublicShell>
       {/* Hero */}
-      <section className="mx-auto grid max-w-[1200px] gap-16 px-4 pt-16 pb-10 md:px-6 lg:grid-cols-2 lg:pt-[72px]">
-        <div className="flex flex-col gap-7">
-          <div className="flex h-[34px] items-center gap-2 self-start rounded-full border border-line px-3.5 text-sm text-muted">
-            <span className="h-2 w-2 rounded-full bg-accent" />
-            Для дітей 9–17 років · онлайн, у своєму темпі
-          </div>
-          <h1 className="font-display text-4xl leading-[1.12] font-bold tracking-tight md:text-[52px]">
-            Місце, де діти стають <span className="text-accent">творцями</span> своїх ідей та технологій
-          </h1>
-          <p className="max-w-[540px] text-xl leading-relaxed text-soft">
-            Програмування, дизайн і геймдев за нашою програмою: уроки крок за кроком, домашки з нагадуваннями та рівні, як у грі.
-            Батьки бачать увесь прогрес.
-          </p>
-          <div className="mt-2 flex flex-wrap gap-3.5">
-            <Link href="/register" className="btn-primary h-14 px-7 text-lg">
-              Спробувати 2 уроки безкоштовно <IconArrow />
-            </Link>
-            <Link href="#courses" className="btn-ghost h-14 px-6 text-lg">
-              Обрати курс
-            </Link>
-          </div>
-          <p className="text-sm text-muted">Без картки · перші 2 уроки будь-якого курсу</p>
-        </div>
+      <section className="mx-auto max-w-[1240px] px-4 pt-2 md:px-6">
+        <div className="bg-brand relative overflow-hidden rounded-[36px] text-white md:rounded-[48px]">
+          {/* Декоративні світлові плями */}
+          <div aria-hidden className="pointer-events-none absolute -top-24 -left-20 h-72 w-72 rounded-full bg-white/15 blur-3xl" />
+          <div aria-hidden className="pointer-events-none absolute right-10 -bottom-20 h-80 w-80 rounded-full bg-pink/50 blur-3xl" />
 
-        {/* Ілюстрація: "картка прогресу" з макета */}
-        <div className="relative hidden min-h-[500px] lg:block" aria-hidden>
-          <div className="card absolute top-2.5 left-10 flex w-[500px] flex-col gap-5 p-7">
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col gap-1">
-                <span className="text-[13px] text-muted">Курс · Python</span>
-                <span className="font-display text-xl font-bold">Рівень 4 · Дослідник</span>
+          <div className="relative grid items-center gap-10 px-6 pt-12 pb-32 md:px-14 md:pt-16 lg:grid-cols-[1.05fr_1fr] lg:pb-36">
+            <div className="flex flex-col gap-7">
+              <div className="flex h-[34px] items-center gap-2 self-start rounded-full border border-white/30 bg-white/15 px-3.5 text-sm backdrop-blur">
+                <span className="h-2 w-2 rounded-full bg-white" />
+                Для дітей 9–17 років · онлайн, у своєму темпі
               </div>
-              <div className="flex h-10 items-center gap-1.5 rounded-xl bg-[#2a2340] px-3 font-bold text-amber">
-                <IconFlame size={18} /> 7 днів поспіль
+              <h1 className="font-display text-4xl leading-[1.12] font-bold tracking-tight md:text-[50px]">
+                Місце, де діти стають <span className="rounded-2xl bg-white/20 px-2 backdrop-blur">творцями</span> своїх ідей та технологій
+              </h1>
+              <p className="max-w-[540px] text-lg leading-relaxed text-white/85 md:text-xl">
+                Програмування, дизайн і геймдев за нашою програмою: уроки крок за кроком, домашки з нагадуваннями та рівні, як у грі.
+                Батьки бачать увесь прогрес.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-3.5">
+                <Link
+                  href="/register"
+                  className="btn h-14 bg-white px-7 text-lg text-accent shadow-xl shadow-[#2d1a8c]/30 hover:-translate-y-0.5 hover:bg-white/95"
+                >
+                  Спробувати 2 уроки безкоштовно <IconArrow />
+                </Link>
+                <Link href="#courses" className="btn h-14 border border-white/50 px-6 text-lg text-white hover:bg-white/15">
+                  Обрати курс
+                </Link>
               </div>
+              <p className="text-sm text-white/75">Без картки · перші 2 уроки будь-якого курсу</p>
             </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex justify-between text-[13px] text-muted">
-                <span>XP до рівня 5</span>
-                <span className="font-mono">640 / 800</span>
+
+            {/* Ілюстрація: орбіта з карткою прогресу */}
+            <div className="relative mx-auto hidden h-[470px] w-full max-w-[520px] lg:block" aria-hidden>
+              <div className="absolute inset-4 rounded-full border border-white/25" />
+              <div className="absolute inset-14 rounded-full border border-dashed border-white/30" />
+              <div className="absolute inset-[88px] rounded-full bg-white/10 blur-sm" />
+
+              {[
+                ["top-2 left-[46%]", IconStar, "text-amber"],
+                ["top-[96px] right-2", IconFlame, "text-pink"],
+                ["bottom-[84px] right-6", IconCheck, "text-good"],
+                ["bottom-4 left-[40%]", IconClock, "text-accent"],
+                ["bottom-[110px] left-0", IconStar, "text-accent"],
+                ["top-[110px] left-1", IconCheck, "text-pink"],
+              ].map(([pos, Icon, color], i) => {
+                const I = Icon as typeof IconStar;
+                return (
+                  <div
+                    key={i}
+                    className={`absolute ${pos} flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-lg shadow-[#2d1a8c]/25 ${color}`}
+                  >
+                    <I size={22} />
+                  </div>
+                );
+              })}
+
+              <div className="absolute top-[70px] left-1/2 flex w-[330px] -translate-x-1/2 flex-col gap-4 rounded-[28px] bg-white p-6 text-text shadow-2xl shadow-[#2d1a8c]/35">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs text-muted">Курс · Python</span>
+                    <span className="font-display text-base font-bold">Рівень 4 · Дослідник</span>
+                  </div>
+                  <div className="flex h-9 items-center gap-1 rounded-full bg-amber/15 px-2.5 text-sm font-bold text-amber">
+                    <IconFlame size={16} /> 7
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex justify-between text-xs text-muted">
+                    <span>XP до рівня 5</span>
+                    <span className="font-mono">640 / 800</span>
+                  </div>
+                  <div className="h-2.5 overflow-hidden rounded-full bg-line">
+                    <div className="bg-brand h-full w-4/5 rounded-full" />
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-ink p-3.5 font-mono text-[13px] leading-6 text-soft">
+                  <div>
+                    <span className="text-violet">for</span> level <span className="text-violet">in</span> range(1, 6):
+                  </div>
+                  <div>
+                    {"    "}print(<span className="text-amber">&quot;Новий рівень!&quot;</span>, level)
+                  </div>
+                </div>
+                <div className="flex gap-2 text-[13px] font-semibold">
+                  <div className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-2xl bg-good/10 text-good">
+                    <IconCheck size={16} /> Урок 5
+                  </div>
+                  <div className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-2xl bg-amber/15 text-amber">
+                    <IconClock size={16} /> До п’ятниці
+                  </div>
+                </div>
               </div>
-              <div className="h-3 overflow-hidden rounded-md bg-[#262b52]">
-                <div className="h-3 w-4/5 rounded-md bg-accent" />
+
+              <div className="absolute bottom-[34px] left-[-6px] flex w-[220px] items-center gap-3 rounded-3xl bg-white/95 px-4 py-3 text-text shadow-xl shadow-[#2d1a8c]/25">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber/15 text-amber">
+                  <IconStar size={20} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted">Новий бейдж</span>
+                  <span className="text-sm font-bold">Майстер циклів</span>
+                </div>
               </div>
-            </div>
-            <div className="rounded-2xl bg-ink p-4 font-mono text-sm leading-7 text-soft">
-              <div>
-                <span className="text-violet">for</span> level <span className="text-violet">in</span> range(1, 6):
-              </div>
-              <div>
-                {"    "}print(<span className="text-amber">&quot;Новий рівень!&quot;</span>, level)
-              </div>
-            </div>
-            <div className="flex gap-2.5 text-sm font-semibold">
-              <div className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-xl bg-surface-2">
-                <IconCheck size={18} className="text-accent" /> Урок 5 пройдено
-              </div>
-              <div className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-xl bg-surface-2">
-                <IconClock size={18} className="text-amber" /> Домашка до п’ятниці
+              <div className="absolute right-[-6px] bottom-[-6px] flex w-[210px] flex-col gap-0.5 rounded-3xl bg-white/95 px-4 py-3 text-text shadow-xl shadow-[#2d1a8c]/25">
+                <span className="text-xs text-muted">Звіт для батьків</span>
+                <span className="text-sm font-bold">3 уроки й 2 домашки за тиждень</span>
               </div>
             </div>
           </div>
-          <div className="absolute top-[400px] left-0 flex w-[250px] items-center gap-3 rounded-[18px] border border-line-2 bg-surface-2 px-4 py-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#2a2340] text-amber">
-              <IconStar size={22} />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[13px] text-muted">Новий бейдж</span>
-              <span className="font-bold">Майстер циклів</span>
-            </div>
-          </div>
-          <div className="absolute top-[380px] left-[330px] flex w-[230px] flex-col gap-1 rounded-[18px] border border-line-2 bg-surface-2 px-4 py-4">
-            <span className="text-[13px] text-muted">Звіт для батьків</span>
-            <span className="font-bold">3 уроки й 2 домашки за тиждень</span>
-          </div>
+
+          {/* Хвиля внизу, як на макеті */}
+          <svg aria-hidden viewBox="0 0 1440 120" preserveAspectRatio="none" className="absolute inset-x-0 -bottom-px h-20 w-full md:h-28">
+            <path d="M0 70 C 240 130, 480 0, 760 40 S 1240 120, 1440 50 L1440 120 L0 120 Z" fill="var(--color-ink)" />
+          </svg>
         </div>
       </section>
 

@@ -40,7 +40,7 @@ export default async function LessonPage({ params, searchParams }: PageProps<"/l
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b border-[#242955]">
+      <header className="border-b border-line">
         <div className="mx-auto flex h-[72px] max-w-[1200px] items-center justify-between px-4 md:px-6">
           <Logo small />
           <Link href="/cabinet/student" className="btn-ghost h-11">До кабінету</Link>
@@ -63,7 +63,7 @@ export default async function LessonPage({ params, searchParams }: PageProps<"/l
                 aria-current={current ? "page" : undefined}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${current ? "bg-surface-2 text-text" : "text-soft hover:bg-surface"}`}
               >
-                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-sm ${it.done ? "bg-accent text-ink" : "bg-line"}`}>
+                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-sm ${it.done ? "bg-accent text-white" : "bg-line"}`}>
                   {it.done ? <IconCheck size={14} /> : it.lesson.order}
                 </span>
                 <span className="text-[15px]">{it.lesson.title}</span>
@@ -120,7 +120,7 @@ export default async function LessonPage({ params, searchParams }: PageProps<"/l
                         {qi + 1}. {q.q}
                       </legend>
                       {q.options.map((opt, oi) => (
-                        <label key={oi} className="flex cursor-pointer items-center gap-3 rounded-xl bg-ink px-4 py-3 hover:bg-[#141835]">
+                        <label key={oi} className="flex cursor-pointer items-center gap-3 rounded-xl bg-ink px-4 py-3 hover:bg-line">
                           <input type="radio" name={`q${qi}`} value={oi} required className="accent-[var(--color-accent)]" />
                           <span>{opt}</span>
                         </label>
