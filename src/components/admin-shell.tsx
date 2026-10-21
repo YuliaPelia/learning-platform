@@ -2,6 +2,7 @@ import { CabinetShell } from "@/components/cabinet-shell";
 
 const NAV = [
   { href: "/admin", label: "Курси" },
+  { href: "/admin/stats", label: "Статистика" },
   { href: "/admin/courses/new", label: "Новий курс" },
   { href: "/teacher/videos", label: "Відеоуроки" },
 ];
