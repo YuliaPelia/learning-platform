@@ -147,3 +147,66 @@ body {
 @utility anim-pulse-soft { animation: pulse-soft 1.4s ease-in-out infinite; }
 @utility anim-load-bar { animation: load-bar 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
 @utility preloader-failsafe { animation: preloader-failsafe 0.4s 6s forwards; }
+
+/* Анімований «скляний» курсор (див. components/custom-cursor.tsx) */
+.cursor-main,
+.cursor-trail i {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+.cursor-main { z-index: 201; }
+.cursor-trail { position: fixed; inset: 0; z-index: 200; pointer-events: none; }
+.cursor-trail i {
+  display: block;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 32% 28%, #fff 0 14%, rgb(236 214 252 / 0.65) 40%, rgb(150 240 226 / 0.45) 100%);
+  border: 1px solid rgb(177 120 230 / 0.5);
+  transition: opacity 0.25s;
+}
+.cursor-main svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  filter: drop-shadow(0 4px 6px rgb(109 74 255 / 0.28));
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.18s;
+  transform-origin: 6px 4px;
+}
+/* кінчик стрілки (6;4 з 48) та кінчик пальця руки (18;4 з 48) стоять рівно під вказівником */
+.cursor-arrow { margin: -4px 0 0 -6px; }
+.cursor-hand { margin: -4px 0 0 -17px; transform-origin: 17px 4px; opacity: 0; transform: scale(0.6) rotate(-14deg); }
+[data-state="hover"] .cursor-arrow,
+.cursor-main[data-state="hover"] .cursor-arrow { opacity: 0; transform: scale(0.6) rotate(14deg); }
+.cursor-main[data-state="hover"] .cursor-hand { opacity: 1; transform: none; }
+.cursor-main[data-state="down"] .cursor-arrow { transform: scale(0.84); }
+.cursor-main[data-state="down"] .cursor-hand { opacity: 1; transform: scale(0.86) rotate(-6deg); }
+.cursor-main[data-state="hidden"] svg,
+.cursor-main[data-state="text"] svg { opacity: 0; }
+.cursor-trail[data-state="hidden"] i,
+.cursor-trail[data-state="text"] i { opacity: 0; }
+
+.cursor-wave {
+  position: fixed;
+  z-index: 199;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 9999px;
+  border: 2px solid #b87be8;
+  background: radial-gradient(circle, rgb(255 255 255 / 0.5), rgb(190 240 245 / 0.25));
+  pointer-events: none;
+  animation: cursor-wave 0.6s ease-out forwards;
+}
+@keyframes cursor-wave {
+  to { transform: scale(5); opacity: 0; }
+}
+
+/* Системний курсор ховається лише коли активний власний (миша, без reduced-motion) */
+html.has-custom-cursor,
+html.has-custom-cursor * { cursor: none !important; }
+html.has-custom-cursor input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+html.has-custom-cursor textarea,
+html.has-custom-cursor [contenteditable="true"] { cursor: text !important; }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { CustomCursor } from "@/components/custom-cursor";
 import { Preloader } from "@/components/preloader";
 
 export const metadata: Metadata = {
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       </head>
       <body className="min-h-screen bg-ink text-text">
         <Preloader />
+        <CustomCursor />
         {children}
       </body>
     </html>
