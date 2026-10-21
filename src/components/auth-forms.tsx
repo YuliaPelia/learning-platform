@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { login, registerParent } from "@/actions/auth";
+import { IconGoogle } from "@/components/icons";
 
 export function GoogleButton({ next }: { next?: string }) {
   const href = next ? `/api/auth/google?next=${encodeURIComponent(next)}` : "/api/auth/google";
   return (
-    <a href={href} className="btn-ghost h-13 w-full text-lg">
-      Увійти через Google
+    <a href={href} className="btn-ghost h-13 w-full gap-3 text-lg">
+      <IconGoogle size={22} /> Увійти через Google
     </a>
   );
 }
