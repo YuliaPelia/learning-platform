@@ -82,6 +82,7 @@ model User {
   login        String   @unique
   passwordHash String?  @map("password_hash") // порожньо в акаунтів, що входять лише через Google
   googleSub    String?  @unique @map("google_sub")
+  appleSub     String?  @unique @map("apple_sub")
   role         Role
   name         String
   birthYear    Int?     @map("birth_year") // зберігаємо рік, а не вік: вік змінюється щороку
@@ -99,6 +100,7 @@ model User {
   consents             Consent[]      @relation("ConsentParent")
   childConsents        Consent[]      @relation("ConsentChild")
   messages             Message[]
+  refreshTokens        RefreshToken[]
 
   @@index([parentId])
   @@map("users")
@@ -340,4 +342,21 @@ model LoginAttempt {
   lockedUntil DateTime? @map("locked_until")
 
   @@map("login_attempts")
+}
+
+// ───────────── refresh_tokens (мобільний додаток) ─────────────
+// Довгоживучий токен оновлення. Зберігаємо лише SHA-256 хеш: витік бази не дає доступу.
+// Токен одноразовий: при оновленні видається новий, а старий позначається revokedAt.
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }

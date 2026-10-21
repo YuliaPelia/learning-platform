@@ -39,10 +39,13 @@ export async function exchangeCode(code: string) {
   return json.id_token;
 }
 
-/** Перевірка підпису ID token і audience нашого клієнта. */
-export async function verifyIdToken(token: string): Promise<VerifiedGoogleIdentity> {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  if (!clientId) throw new Error("GOOGLE_CLIENT_ID не задано");
+/**
+ * Перевірка підпису ID token і audience нашого клієнта.
+ * Мобільний додаток передає свої client ID (iOS/Android) — вони відрізняються від веб-клієнта.
+ */
+export async function verifyIdToken(token: string, audience?: string | string[]): Promise<VerifiedGoogleIdentity> {
+  const clientId = audience ?? process.env.GOOGLE_CLIENT_ID;
+  if (!clientId || (Array.isArray(clientId) && clientId.length === 0)) throw new Error("GOOGLE_CLIENT_ID не задано");
   const { payload } = await jwtVerify(token, JWKS, {
     audience: clientId,
     issuer: ["https://accounts.google.com", "accounts.google.com"],

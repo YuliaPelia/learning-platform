@@ -2,12 +2,14 @@
  * Щоденна задача (запускається планувальником, напр. Vercel Cron — див. vercel.json):
  * 1) нагадування батькам за 3 дні до списання;
  * 2) нагадування про домашку, у якої дедлайн завтра;
- * 3) підписки, у яких минув пільговий період, переводимо в "скасована".
+ * 3) підписки, у яких минув пільговий період, переводимо в "скасована";
+ * 4) чистимо старі лічильники входів і refresh-токени мобільного додатка.
  */
 import { prisma } from "@/db";
 import { formatDate, formatUah } from "@/lib/format";
 import { appUrl, sendEmail } from "@/lib/mailer";
 import { GRACE_DAYS } from "@/lib/plans";
+import { deleteExpiredRefreshTokens } from "@/lib/mobile/tokens";
 import { deleteExpiredAttempts } from "@/lib/rate-limit";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -85,6 +87,7 @@ export async function GET(request: Request) {
 
   // 4. Очищення протермінованих лічильників невдалих входів
   const loginAttemptsCleaned = await deleteExpiredAttempts(now);
+  const refreshTokensCleaned = await deleteExpiredRefreshTokens(now);
 
-  return Response.json({ ...report, loginAttemptsCleaned });
+  return Response.json({ ...report, loginAttemptsCleaned, refreshTokensCleaned });
 }
