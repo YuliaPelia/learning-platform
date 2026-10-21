@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { RegisterForm } from "@/components/auth-forms";
+import { GoogleButton, RegisterForm } from "@/components/auth-forms";
 import { PublicShell } from "@/components/site-chrome";
 import { getCurrentUser, homeFor } from "@/lib/dal";
 
@@ -26,7 +26,9 @@ export default async function RegisterPage({ searchParams }: PageProps<"/registe
             <li><span className="font-mono text-accent">03</span> Дитина входить і починає навчання, а ви відстежуєте її прогрес</li>
           </ol>
         </div>
-        <div className="card p-8">
+        <div className="card flex flex-col gap-4 p-8">
+          <GoogleButton next={typeof next === "string" ? next : undefined} />
+          <p className="text-center text-sm text-muted">або заповніть форму</p>
           <RegisterForm next={typeof next === "string" ? next : undefined} />
           <p className="mt-6 text-center text-muted">
             Вже маєте акаунт? <Link href="/login" className="text-accent underline">Увійти</Link>

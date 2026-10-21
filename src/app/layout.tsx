@@ -2,9 +2,18 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
   title: { default: "ITCodeCraft — IT-школа онлайн для дітей 9–17 років", template: "%s · ITCodeCraft" },
   description:
     "Програмування, дизайн і геймдев для дітей 9–17 років: уроки крок за кроком, домашки з нагадуваннями, рівні та бейджі. Перші 2 уроки безкоштовно.",
+  openGraph: {
+    type: "website",
+    siteName: "ITCodeCraft",
+    locale: "uk_UA",
+    title: "ITCodeCraft — IT-школа онлайн для дітей 9–17 років",
+    description: "Програмування, дизайн і геймдев онлайн: уроки крок за кроком, домашки з нагадуваннями, рівні та бейджі. Перші 2 уроки безкоштовно.",
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -36,7 +36,25 @@ export const ChildSchema = z.object({
     .toLowerCase()
     .regex(/^[a-z0-9_.]{3,24}$/, { error: "Логін: 3–24 латинські літери, цифри, _ або ." }),
   password,
+  email: z
+    .union([z.literal(""), z.email({ error: "Некоректний email" }).trim().toLowerCase()])
+    .optional()
+    .transform((v) => v || undefined),
   childDataConsent: z.literal("on", { error: "Потрібна ваша згода на обробку даних дитини" }),
+});
+
+export const GoogleParentSchema = z.object({
+  name: z.string().trim().min(2, { error: "Вкажіть ім'я" }).max(60),
+  ageConfirm: z.literal("on", { error: "Потрібно підтвердити, що вам є 18 років" }),
+});
+
+export const GoogleStudentSchema = z.object({
+  name: z.string().trim().min(2, { error: "Вкажіть ім'я або нікнейм" }).max(40),
+  birthYear: z.coerce
+    .number({ error: "Вкажіть рік народження" })
+    .int()
+    .min(currentYear - 18, { error: "Платформа для дітей 9–17 років" })
+    .max(currentYear - 8, { error: "Платформа для дітей 9–17 років" }),
 });
 
 export const CheckoutSchema = z.object({

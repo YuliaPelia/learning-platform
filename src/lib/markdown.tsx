@@ -7,10 +7,16 @@ import type { ReactNode } from "react";
  * навіть якщо в урок потрапить <script>, він покажеться як текст.
  */
 function inline(text: string, keyBase: string): ReactNode[] {
-  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).filter(Boolean);
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g).filter(Boolean);
   return parts.map((p, i) => {
     const key = `${keyBase}-${i}`;
     if (p.startsWith("**") && p.endsWith("**")) return <strong key={key}>{p.slice(2, -2)}</strong>;
+    if (/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(p))
+      return (
+        <a key={key} href={`mailto:${p}`} className="text-accent underline-offset-2 hover:underline">
+          {p}
+        </a>
+      );
     if (p.startsWith("`") && p.endsWith("`"))
       return (
         <code key={key} className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[0.9em] text-accent">

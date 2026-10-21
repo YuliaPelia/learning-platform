@@ -13,16 +13,20 @@ export async function addChild(_prev: FormState, formData: FormData): Promise<Fo
   const parent = await requireUser("parent");
   const parsed = ChildSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: firstError(parsed.error), values: keepValues(formData) };
-  const { name, birthYear, login, password } = parsed.data;
+  const { name, birthYear, login, password, email } = parsed.data;
 
   const taken = await prisma.user.findUnique({ where: { login }, select: { id: true } });
   if (taken) return { error: "Такий логін уже зайнятий — спробуйте інший", values: keepValues(formData) };
+  if (email) {
+    const takenEmail = await prisma.user.findFirst({ where: { OR: [{ email }, { login: email }] }, select: { id: true } });
+    if (takenEmail) return { error: "Акаунт з таким email уже існує", values: keepValues(formData) };
+  }
 
   const meta = await requestMeta();
   // Профіль дитини і згода батьків на обробку її даних — одна транзакція
   await prisma.$transaction(async (tx) => {
     const child = await tx.user.create({
-      data: { role: "student", login, name, birthYear, parentId: parent.id, passwordHash: await hashPassword(password) },
+      data: { role: "student", login, name, birthYear, email: email ?? null, parentId: parent.id, passwordHash: await hashPassword(password) },
     });
     await tx.consent.create({
       data: { parentId: parent.id, childId: child.id, type: "child_data", documentVersion: LEGAL_VERSION, ...meta },
@@ -30,7 +34,7 @@ export async function addChild(_prev: FormState, formData: FormData): Promise<Fo
   });
 
   revalidatePath("/cabinet/parent");
-  return { ok: true };
+  return { ok: true, values: email ? { email } : undefined };
 }
 
 /**
@@ -57,7 +61,7 @@ export async function deleteChild(_prev: FormState, formData: FormData): Promise
       if (!ok) {
         // Не видаляємо дитину, поки WayForPay не підтвердив зупинку списань
         console.error("Не вдалося скасувати регулярний платіж — профіль дитини не видалено", s.orderReference);
-        return { error: "Не вдалося скасувати підписку в платіжній системі, тож профіль не видалено. Спробуйте пізніше або напишіть у підтримку." };
+        return { error: "Не вдалося скасувати підписку в платіжній системі, тож профіль не видалено. Спробуйте пізніше або напишіть на itcodecraft@gmail.com." };
       }
     }
     await prisma.subscription.update({ where: { id: s.id }, data: { status: "canceled", canceledAt: new Date() } });

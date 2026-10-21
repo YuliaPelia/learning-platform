@@ -80,7 +80,8 @@ model User {
   id           String   @id @default(uuid()) @db.Uuid
   email        String?  @unique // у дитини email може не бути — входить за login
   login        String   @unique
-  passwordHash String   @map("password_hash")
+  passwordHash String?  @map("password_hash") // порожньо в акаунтів, що входять лише через Google
+  googleSub    String?  @unique @map("google_sub")
   role         Role
   name         String
   birthYear    Int?     @map("birth_year") // зберігаємо рік, а не вік: вік змінюється щороку

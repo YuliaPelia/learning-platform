@@ -125,6 +125,21 @@ describe("rate limiting входу", () => {
     expect(store.has(loginKey("kid"))).toBe(false);
   });
 
+  it("login: акаунт без пароля дає ту саму помилку і не створює сесію", async () => {
+    userFindUnique.mockResolvedValue({ id: "u1", role: "parent", passwordHash: null });
+    const r = await login(undefined, form({ login: "a@b.c", password: "secret1" }));
+    expect(r?.error).toBe("Невірний логін або пароль");
+    expect(verifyPassword).not.toHaveBeenCalled();
+    expect(store.get(loginKey("a@b.c"))?.failures).toBe(1);
+  });
+
+  it("verifyPassword: порожній хеш повертає незбіг без винятку", async () => {
+    const { verifyPassword: real } = await vi.importActual<typeof import("@/lib/password")>("@/lib/password");
+    await expect(real("secret", null)).resolves.toBe(false);
+    await expect(real("secret", undefined)).resolves.toBe(false);
+    await expect(real("secret", "")).resolves.toBe(false);
+  });
+
   it("login: невалідні дані відхиляються zod до звернення до БД", async () => {
     const r = await login(undefined, form({ login: "", password: "" }));
     expect(r?.error).toBeTruthy();

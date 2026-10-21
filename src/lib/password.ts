@@ -10,7 +10,8 @@ export function hashPassword(password: string) {
  * Перевірка пароля. Підтримує bcrypt ("$2...") і старий формат "salt:hash" (scrypt),
  * яким заповнювала базу перша версія seed у prisma-practice.
  */
-export async function verifyPassword(password: string, stored: string) {
+export async function verifyPassword(password: string, stored: string | null | undefined) {
+  if (!stored) return false;
   if (stored.startsWith("$2")) return bcrypt.compare(password, stored);
   const [salt, hash] = stored.split(":");
   if (!salt || !hash) return false;

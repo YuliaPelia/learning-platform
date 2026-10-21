@@ -25,6 +25,7 @@ vi.mock("@/lib/dal", () => ({ requireUser }));
 vi.mock("@/lib/request", () => ({ requestMeta: async () => ({ ip: "x", userAgent: null }) }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
+import { prisma } from "@/db";
 import { addChild, deleteChild } from "@/actions/children";
 
 const CID = "11111111-1111-4111-8111-111111111111";
@@ -52,6 +53,39 @@ describe("children actions", () => {
     const r = await addChild(undefined, form({ name: "К", birthYear: "1900", login: "A B", password: "1" }));
     expect(r?.error).toBeTruthy();
     expect(findUnique).not.toHaveBeenCalled();
+  });
+
+  it("addChild: порожній email не записується", async () => {
+    findUnique.mockResolvedValue(null);
+    const txCreate = vi.fn().mockResolvedValue({ id: "c1" });
+    vi.mocked(prisma.$transaction).mockImplementation(async (fn) =>
+      (fn as (tx: unknown) => Promise<unknown>)({ user: { create: txCreate }, consent: { create: vi.fn() } }),
+    );
+    const r = await addChild(undefined, form({ name: "Макс", birthYear: "2014", login: "maks", password: "maks12345", childDataConsent: "on", email: "" }));
+    expect(r?.ok).toBe(true);
+    expect(r?.values?.email).toBeUndefined();
+    expect(txCreate.mock.calls[0][0].data.email).toBeNull();
+    expect(userFindFirst).not.toHaveBeenCalled();
+  });
+
+  it("addChild: зайнятий email не створює профіль", async () => {
+    findUnique.mockResolvedValue(null);
+    userFindFirst.mockResolvedValue({ id: "other" });
+    const r = await addChild(undefined, form({ name: "Макс", birthYear: "2014", login: "maks", password: "maks12345", childDataConsent: "on", email: "kid@gmail.com" }));
+    expect(r?.error).toBe("Акаунт з таким email уже існує");
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("addChild: вільний email зберігається в нижньому регістрі", async () => {
+    findUnique.mockResolvedValue(null);
+    userFindFirst.mockResolvedValue(null);
+    const txCreate = vi.fn().mockResolvedValue({ id: "c1" });
+    vi.mocked(prisma.$transaction).mockImplementation(async (fn) =>
+      (fn as (tx: unknown) => Promise<unknown>)({ user: { create: txCreate }, consent: { create: vi.fn() } }),
+    );
+    const r = await addChild(undefined, form({ name: "Макс", birthYear: "2014", login: "maks", password: "maks12345", childDataConsent: "on", email: "Kid@gmail.com" }));
+    expect(r).toMatchObject({ ok: true, values: { email: "kid@gmail.com" } });
+    expect(txCreate.mock.calls[0][0].data.email).toBe("kid@gmail.com");
   });
 
   it("deleteChild: не-UUID childId відхиляється без звернення до БД", async () => {

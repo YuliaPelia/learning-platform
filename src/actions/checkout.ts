@@ -85,7 +85,7 @@ export async function cancelSubscription(_prev: FormState, formData: FormData): 
     const ok = await removeRegularPayment(cfg, sub.orderReference).catch(() => false);
     if (!ok) {
       console.error("Не вдалося скасувати регулярний платіж у WayForPay — підписку не скасовано", sub.orderReference);
-      return { error: "Не вдалося скасувати підписку в платіжній системі. Спробуйте пізніше або напишіть у підтримку — гроші не списуватимуться повторно лише після успішного скасування." };
+      return { error: "Не вдалося скасувати підписку в платіжній системі. Спробуйте пізніше або напишіть на itcodecraft@gmail.com — гроші не списуватимуться повторно лише після успішного скасування." };
     }
   }
   await prisma.subscription.update({ where: { id: sub.id }, data: { status: "canceled", canceledAt: new Date() } });

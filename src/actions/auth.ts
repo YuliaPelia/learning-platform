@@ -56,7 +56,7 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
 
   const user = await prisma.user.findUnique({ where: { login } });
   // Однакове повідомлення для "немає користувача" і "невірний пароль" — щоб не підказувати зловмиснику
-  if (!user || !(await verifyPassword(password, user.passwordHash))) {
+  if (!user?.passwordHash || !(await verifyPassword(password, user.passwordHash))) {
     await recordFailure(lKey, LOGIN_LIMITS.maxPerLogin);
     if (iKey) await recordFailure(iKey, LOGIN_LIMITS.maxPerIp);
     return { error: "Невірний логін або пароль", values: keepValues(formData) };
