@@ -54,7 +54,7 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-line">
       <div className="mx-auto flex max-w-[1200px] flex-col gap-4 px-4 py-10 text-sm text-muted md:flex-row md:items-center md:justify-between md:px-6">
-        <span>© ITCodeCraft · ФОП [ПІБ], РНОКПП [номер]</span>
+        <span>© ITCodeCraft · ФОП Войціховська Надія Валентинівна, ІПН 2599110948</span>
         <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="Документи">
           <Link href="/legal/oferta" className="hover:text-text">Публічна оферта</Link>
           <Link href="/legal/privacy" className="hover:text-text">Політика конфіденційності</Link>

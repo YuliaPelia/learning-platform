@@ -74,4 +74,4 @@ export function isPlanId(v: unknown): v is PlanId {
 }
 
 /** Поточна версія юридичних документів — зберігається разом зі згодою. */
-export const LEGAL_VERSION = "2026-09-28";
+export const LEGAL_VERSION = "2026-10-21";
