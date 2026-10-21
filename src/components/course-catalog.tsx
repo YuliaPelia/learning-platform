@@ -28,10 +28,10 @@ export function CourseCatalog({ groups }: { groups: CatalogGroup[] }) {
     <div className="flex flex-col gap-9">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
         <div className="flex flex-col gap-2.5">
-          <h2 className="font-display text-4xl font-bold">Курси</h2>
+          <h2 className="font-display text-3xl font-bold sm:text-4xl">Курси</h2>
           <p className="text-lg text-muted">Навчання лише за програмою ITCodeCraft — усе всередині платформи</p>
         </div>
-        <div className="flex gap-2" role="group" aria-label="Фільтр курсів">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Фільтр курсів">
           {FILTERS.map((f) => (
             <button
               key={f.id}
@@ -49,7 +49,7 @@ export function CourseCatalog({ groups }: { groups: CatalogGroup[] }) {
       </div>
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {shown.map((g) => (
-          <div key={g.id} className="card flex min-h-[236px] flex-col gap-4 p-7">
+          <div key={g.id} className="card flex min-h-[236px] min-w-0 flex-col gap-4 p-5 sm:p-7">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-[22px] font-bold">{g.title}</h3>
               <span className="shrink-0 rounded-full bg-line px-3 py-1 text-[13px] whitespace-nowrap text-soft">{g.age}</span>

@@ -19,22 +19,22 @@ export function CabinetShell({
 }) {
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
-      <aside className="flex flex-col gap-7 border-b border-line bg-deep px-5 py-6 lg:sticky lg:top-0 lg:h-screen lg:w-[272px] lg:shrink-0 lg:border-r lg:border-b-0">
-        <div className="px-2">
+      <aside className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-3 border-b border-line bg-deep px-4 py-4 lg:flex lg:flex-col lg:items-stretch lg:gap-7 lg:px-5 lg:py-6 lg:sticky lg:top-0 lg:h-screen lg:w-[272px] lg:shrink-0 lg:border-r lg:border-b-0">
+        <div className="px-0 lg:px-2">
           <Logo small />
         </div>
-        <nav className="flex flex-row flex-wrap gap-1 lg:flex-col" aria-label="Меню кабінету">
+        <nav className="col-span-2 row-start-2 -mx-4 flex flex-row gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:flex-col lg:gap-1 lg:overflow-visible lg:px-0 lg:pb-0 [&::-webkit-scrollbar]:hidden" aria-label="Меню кабінету">
           {nav.map((n) => (
-            <Link key={n.href} href={n.href} className="flex h-11 items-center rounded-[10px] px-3.5 font-semibold text-muted hover:bg-surface-2 hover:text-text">
+            <Link key={n.href} href={n.href} className="flex h-10 shrink-0 items-center rounded-full border border-line bg-white/70 px-4 text-sm font-semibold whitespace-nowrap text-muted hover:bg-surface-2 hover:text-text lg:h-11 lg:rounded-[10px] lg:border-0 lg:bg-transparent lg:px-3.5 lg:text-base">
               {n.label}
             </Link>
           ))}
         </nav>
-        <div className="mt-auto flex items-center gap-3 rounded-2xl bg-surface-2 p-3.5">
+        <div className="col-start-2 row-start-1 flex items-center gap-2 rounded-2xl bg-surface-2 p-2 lg:mt-auto lg:gap-3 lg:p-3.5">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/10 font-bold text-accent">
             {user.name.slice(0, 1).toUpperCase()}
           </div>
-          <div className="flex min-w-0 flex-1 flex-col">
+          <div className="hidden min-w-0 flex-1 flex-col lg:flex">
             <span className="truncate font-semibold">{user.name}</span>
             <span className="text-[13px] text-muted">{roleLabel}</span>
           </div>

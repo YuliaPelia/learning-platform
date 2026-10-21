@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/db";
 import { CourseCatalog, type CatalogGroup } from "@/components/course-catalog";
 import { IconArrow, IconCheck, IconClock, IconFlame, IconStar } from "@/components/icons";
+import { HeroSceneLazy } from "@/components/hero-scene-lazy";
+import { Reveal } from "@/components/reveal";
 import { PublicShell } from "@/components/site-chrome";
 import { CATEGORY_LABELS } from "@/lib/format";
 
@@ -45,43 +47,44 @@ export default async function HomePage() {
     <PublicShell>
       {/* Hero */}
       <section className="mx-auto max-w-[1240px] px-4 pt-2 md:px-6">
-        <div className="bg-brand relative overflow-hidden rounded-[36px] text-white md:rounded-[48px]">
+        <div className="bg-brand-flow relative overflow-hidden rounded-t-[36px] text-white md:rounded-t-[48px]">
           {/* Декоративні світлові плями */}
-          <div aria-hidden className="pointer-events-none absolute -top-24 -left-20 h-72 w-72 rounded-full bg-white/15 blur-3xl" />
-          <div aria-hidden className="pointer-events-none absolute right-10 -bottom-20 h-80 w-80 rounded-full bg-pink/50 blur-3xl" />
+          <div aria-hidden className="pointer-events-none absolute -top-24 -left-20 h-72 w-72 rounded-full bg-white/15 blur-3xl anim-float" />
+          <div aria-hidden className="pointer-events-none absolute right-10 -bottom-20 h-80 w-80 rounded-full bg-pink/50 blur-3xl anim-float" style={{ animationDelay: "-2.5s", animationDuration: "8s" }} />
 
           <div className="relative grid items-center gap-10 px-6 pt-12 pb-32 md:px-14 md:pt-16 lg:grid-cols-[1.05fr_1fr] lg:pb-36">
             <div className="flex flex-col gap-7">
-              <div className="flex h-[34px] items-center gap-2 self-start rounded-full border border-white/30 bg-white/15 px-3.5 text-sm backdrop-blur">
-                <span className="h-2 w-2 rounded-full bg-white" />
+              <div className="anim-rise flex min-h-[34px] items-center gap-2 self-start rounded-full border border-white/30 bg-white/15 px-3.5 py-1.5 text-sm leading-snug backdrop-blur">
+                <span className="h-2 w-2 shrink-0 rounded-full bg-white" />
                 Для дітей 9–17 років · онлайн, у своєму темпі
               </div>
-              <h1 className="font-display text-4xl leading-[1.12] font-bold tracking-tight md:text-[50px]">
+              <h1 style={{ animationDelay: "0.1s" }} className="anim-rise font-display text-[28px] leading-[1.15] font-bold tracking-tight sm:text-4xl md:text-[50px]">
                 Місце, де діти стають <span className="rounded-2xl bg-white/20 px-2 backdrop-blur">творцями</span> своїх ідей та технологій
               </h1>
-              <p className="max-w-[540px] text-lg leading-relaxed text-white/85 md:text-xl">
+              <p style={{ animationDelay: "0.2s" }} className="anim-rise max-w-[540px] text-lg leading-relaxed text-white/85 md:text-xl">
                 Програмування, дизайн і геймдев за нашою програмою: уроки крок за кроком, домашки з нагадуваннями та рівні, як у грі.
                 Батьки бачать увесь прогрес.
               </p>
-              <div className="mt-2 flex flex-wrap gap-3.5">
+              <div style={{ animationDelay: "0.3s" }} className="anim-rise mt-2 flex flex-wrap gap-3.5">
                 <Link
                   href="/register"
-                  className="btn h-14 bg-white px-7 text-lg text-accent shadow-xl shadow-[#2d1a8c]/30 hover:-translate-y-0.5 hover:bg-white/95"
+                  className="btn h-14 w-full bg-white px-6 text-base text-accent sm:w-auto sm:px-7 sm:text-lg shadow-xl shadow-[#2d1a8c]/30 hover:-translate-y-0.5 hover:bg-white/95"
                 >
                   Спробувати 2 уроки безкоштовно <IconArrow />
                 </Link>
-                <Link href="#courses" className="btn h-14 border border-white/50 px-6 text-lg text-white hover:bg-white/15">
+                <Link href="#courses" className="btn h-14 w-full border border-white/50 px-6 text-base text-white sm:w-auto sm:text-lg hover:bg-white/15">
                   Обрати курс
                 </Link>
               </div>
-              <p className="text-sm text-white/75">Без картки · перші 2 уроки будь-якого курсу</p>
+              <p style={{ animationDelay: "0.4s" }} className="anim-rise text-sm text-white/75">Без картки · перші 2 уроки будь-якого курсу</p>
             </div>
 
             {/* Ілюстрація: орбіта з карткою прогресу */}
             <div className="relative mx-auto hidden h-[470px] w-full max-w-[520px] lg:block" aria-hidden>
-              <div className="absolute inset-4 rounded-full border border-white/25" />
-              <div className="absolute inset-14 rounded-full border border-dashed border-white/30" />
+              <div className="anim-spin-slow absolute inset-4 rounded-full border border-white/25" />
+              <div className="anim-spin-slow-rev absolute inset-14 rounded-full border border-dashed border-white/30" />
               <div className="absolute inset-[88px] rounded-full bg-white/10 blur-sm" />
+              <HeroSceneLazy />
 
               {[
                 ["top-2 left-[46%]", IconStar, "text-amber"],
@@ -95,14 +98,15 @@ export default async function HomePage() {
                 return (
                   <div
                     key={i}
-                    className={`absolute ${pos} flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-lg shadow-[#2d1a8c]/25 ${color}`}
+                    style={{ animationDuration: `${4 + (i % 3)}s`, animationDelay: `${-i * 0.8}s` }}
+                    className={`anim-float absolute ${pos} flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-lg shadow-[#2d1a8c]/25 ${color}`}
                   >
                     <I size={22} />
                   </div>
                 );
               })}
 
-              <div className="absolute top-[70px] left-1/2 flex w-[330px] -translate-x-1/2 flex-col gap-4 rounded-[28px] bg-white p-6 text-text shadow-2xl shadow-[#2d1a8c]/35">
+              <div style={{ animationDelay: "0.35s" }} className="anim-rise absolute top-[70px] left-1/2 flex w-[330px] -translate-x-1/2 flex-col gap-4 rounded-[28px] bg-white p-6 text-text shadow-2xl shadow-[#2d1a8c]/35">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex flex-col gap-0.5">
                     <span className="text-xs text-muted">Курс · Python</span>
@@ -118,7 +122,7 @@ export default async function HomePage() {
                     <span className="font-mono">640 / 800</span>
                   </div>
                   <div className="h-2.5 overflow-hidden rounded-full bg-line">
-                    <div className="bg-brand h-full w-4/5 rounded-full" />
+                    <div className="bg-brand anim-bar h-full w-4/5 rounded-full" />
                   </div>
                 </div>
                 <div className="rounded-2xl bg-ink p-3.5 font-mono text-[13px] leading-6 text-soft">
@@ -139,7 +143,7 @@ export default async function HomePage() {
                 </div>
               </div>
 
-              <div className="absolute bottom-[34px] left-[-6px] flex w-[220px] items-center gap-3 rounded-3xl bg-white/95 px-4 py-3 text-text shadow-xl shadow-[#2d1a8c]/25">
+              <div style={{ animationDelay: "0.8s" }} className="anim-pop absolute bottom-[34px] left-[-6px] flex w-[220px] items-center gap-3 rounded-3xl bg-white/95 px-4 py-3 text-text shadow-xl shadow-[#2d1a8c]/25">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber/15 text-amber">
                   <IconStar size={20} />
                 </div>
@@ -148,7 +152,7 @@ export default async function HomePage() {
                   <span className="text-sm font-bold">Майстер циклів</span>
                 </div>
               </div>
-              <div className="absolute right-[-6px] bottom-[-6px] flex w-[210px] flex-col gap-0.5 rounded-3xl bg-white/95 px-4 py-3 text-text shadow-xl shadow-[#2d1a8c]/25">
+              <div style={{ animationDelay: "1s" }} className="anim-pop absolute right-[-6px] bottom-[-6px] flex w-[210px] flex-col gap-0.5 rounded-3xl bg-white/95 px-4 py-3 text-text shadow-xl shadow-[#2d1a8c]/25">
                 <span className="text-xs text-muted">Звіт для батьків</span>
                 <span className="text-sm font-bold">3 уроки й 2 домашки за тиждень</span>
               </div>
@@ -164,14 +168,14 @@ export default async function HomePage() {
 
       {/* Як навчаємось */}
       <section id="how" className="mx-auto flex max-w-[1200px] flex-col gap-9 px-4 pt-10 pb-[72px] md:px-6">
-        <h2 className="font-display text-4xl font-bold">Як навчаємось</h2>
+        <Reveal><h2 className="font-display text-3xl font-bold sm:text-4xl">Як навчаємось</h2></Reveal>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {STEPS.map(([n, title, text]) => (
-            <div key={n} className="card flex flex-col gap-3.5 p-7">
+          {STEPS.map(([n, title, text], i) => (
+            <Reveal key={n} delay={i * 90} className="card hover-lift flex flex-col gap-3.5 p-7">
               <span className="font-mono text-[15px] text-accent">{n}</span>
               <h3 className="text-[21px] font-bold">{title}</h3>
               <p className="leading-relaxed text-muted">{text}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>
@@ -179,36 +183,36 @@ export default async function HomePage() {
       {/* Курси */}
       <section id="courses" className="bg-deep">
         <div className="mx-auto max-w-[1200px] px-4 py-[72px] md:px-6">
-          <CourseCatalog groups={groups} />
+          <Reveal><CourseCatalog groups={groups} /></Reveal>
         </div>
       </section>
 
       {/* Для батьків */}
       <section id="parents" className="mx-auto grid max-w-[1200px] items-center gap-16 px-4 py-20 md:px-6 lg:grid-cols-2">
-        <div className="flex flex-col gap-5">
-          <h2 className="font-display text-4xl leading-tight font-bold">Дитина навчається — батьки бачать усе</h2>
+        <Reveal className="flex flex-col gap-5">
+          <h2 className="font-display text-3xl leading-tight font-bold sm:text-4xl">Дитина навчається — батьки бачать усе</h2>
           <p className="text-lg leading-relaxed text-soft">
             Один кабінет на двох: дитина проходить уроки, а ви перевіряєте прогрес, домашки й оплату. Дитина нічого не оплачує сама.
           </p>
-        </div>
+        </Reveal>
         <div className="grid gap-4 sm:grid-cols-2">
           {[
             ["Прогрес", "Пройдені уроки, рівень і серія днів"],
             ["Домашки", "Що здано, що чекає, коментарі викладача"],
             ["Нагадування", "Лист перед дедлайном домашки і перед списанням"],
             ["Безпечно", "Мінімум даних дитини, видалення в один клік"],
-          ].map(([t, d]) => (
-            <div key={t} className="card flex flex-col gap-2 p-6">
+          ].map(([t, d], i) => (
+            <Reveal key={t} delay={i * 90} className="card hover-lift flex flex-col gap-2 p-6">
               <span className="text-lg font-bold">{t}</span>
               <span className="leading-relaxed text-muted">{d}</span>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>
 
       {/* Тарифи */}
       <section className="mx-auto max-w-[1200px] px-4 pb-20 md:px-6">
-        <div className="flex flex-col items-start justify-between gap-6 rounded-[28px] border border-line-2 bg-surface px-8 py-12 md:flex-row md:items-center md:px-14">
+        <Reveal className="flex flex-col items-start justify-between gap-6 rounded-[28px] border border-line-2 bg-surface px-8 py-12 md:flex-row md:items-center md:px-14">
           <div className="flex flex-col gap-2.5">
             <h2 className="font-display text-[28px] font-bold">Три тарифи — від одного курсу до викладача</h2>
             <p className="text-lg text-muted">Простий · Середній · Преміум. Оплата щомісяця через WayForPay, скасування в один клік.</p>
@@ -216,7 +220,7 @@ export default async function HomePage() {
           <Link href="/pricing" className="btn-primary h-14 shrink-0 px-7 text-lg">
             Порівняти тарифи
           </Link>
-        </div>
+        </Reveal>
       </section>
     </PublicShell>
   );

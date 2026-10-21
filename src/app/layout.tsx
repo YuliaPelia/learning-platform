@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Preloader } from "@/components/preloader";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL ?? "http://localhost:3000"),
@@ -28,7 +29,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap"
         />
       </head>
-      <body className="min-h-screen bg-ink text-text">{children}</body>
+      <body className="min-h-screen bg-ink text-text">
+        <Preloader />
+        {children}
+      </body>
     </html>
   );
 }

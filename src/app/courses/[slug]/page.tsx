@@ -44,7 +44,7 @@ export default async function CoursePage({ params, searchParams }: PageProps<"/c
               )
             ) : user?.role === "parent" ? (
               <>
-                <Link href="/cabinet/parent#add-child" className="btn-ghost h-14 px-6">Дитина проходить курс зі свого акаунта</Link>
+                <Link href="/cabinet/parent#add-child" className="btn-ghost h-auto min-h-14 px-6 py-2 text-center">Дитина проходить курс зі свого акаунта</Link>
                 <Link href="/pricing" className="btn-primary h-14 px-6">Відкрити весь курс</Link>
               </>
             ) : (
@@ -56,7 +56,7 @@ export default async function CoursePage({ params, searchParams }: PageProps<"/c
         {items.length > 0 && (
           <ol className="flex flex-col gap-3">
             {items.map(({ lesson, done, access }) => (
-              <li key={lesson.id} className="card flex items-center gap-5 px-6 py-5">
+              <li key={lesson.id} className="card flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-4 sm:flex-nowrap sm:gap-5 sm:px-6 sm:py-5">
                 <span
                   className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-mono font-bold ${
                     done ? "bg-accent text-white" : "bg-surface-2 text-soft"
@@ -64,14 +64,14 @@ export default async function CoursePage({ params, searchParams }: PageProps<"/c
                 >
                   {done ? <IconCheck size={18} /> : lesson.order}
                 </span>
-                <div className="flex flex-1 flex-col gap-1">
+                <div className="flex min-w-0 flex-1 basis-[calc(100%-4.5rem)] flex-col gap-1 sm:basis-auto">
                   <span className="text-lg font-semibold">{lesson.title}</span>
                   <span className="text-muted">{lesson.summary}</span>
                 </div>
                 {lesson.order <= FREE_LESSONS ? (
-                  <span className="shrink-0 rounded-full bg-good/10 px-3 py-1 text-[13px] font-bold text-good">Безкоштовно</span>
+                  <span className="ml-[3.75rem] shrink-0 rounded-full bg-good/10 px-3 py-1 text-[13px] font-bold text-good sm:ml-0">Безкоштовно</span>
                 ) : access === "needs_subscription" ? (
-                  <IconLock className="shrink-0 text-faint" />
+                  <IconLock className="ml-[3.75rem] shrink-0 text-faint sm:ml-0" />
                 ) : null}
               </li>
             ))}

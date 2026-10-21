@@ -78,7 +78,7 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
               {kid.name}
               {kid.birthYear ? <span className="ml-2 text-base font-normal text-muted">· {new Date().getFullYear() - kid.birthYear} років · логін {kid.login}</span> : null}
             </h2>
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-4">
               <Stat label="Уроків за тиждень" value={String(o.lessonsThisWeek)} />
               <Stat label="Домашки здано" value={`${o.homework.length - pendingHw} з ${o.homework.length}`} />
               <Stat label="Рівень" value={`${o.level.level} · ${o.level.title}`} />
@@ -225,9 +225,9 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="card flex flex-col gap-2 px-6 py-5.5">
+    <div className="card flex flex-col gap-2 px-4 py-4 sm:px-6 sm:py-5.5">
       <span className="text-sm text-muted">{label}</span>
-      <span className="font-display text-2xl font-bold">{value}</span>
+      <span className="font-display text-xl font-bold sm:text-2xl">{value}</span>
     </div>
   );
 }
