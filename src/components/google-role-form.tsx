@@ -67,7 +67,8 @@ export function GoogleRoleForm({ email, defaultName }: { email: string; defaultN
           </div>
           <div>
             <label htmlFor="student-year" className="label">Рік народження</label>
-            <input id="student-year" name="birthYear" type="number" min={year - 18} max={year - 8} className="field" required defaultValue={studentState?.values?.birthYear} />
+            <input id="student-year" name="birthYear" type="number" min={year - 18} max={year - 15} className="field" required defaultValue={studentState?.values?.birthYear} />
+            <p className="mt-1.5 text-sm text-muted">Самостійно — з 14 років. Молодшим профіль створюють батьки.</p>
           </div>
           <ErrorBox message={studentState?.error} />
           <button type="submit" disabled={studentPending} className="btn-primary h-13 text-lg">

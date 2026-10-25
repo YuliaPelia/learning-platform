@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { canSubmitHomework } from "../access";
-import { HOMEWORK_XP, LEVELS, computeBadges, dayKey, levelFromXp, streakDays, totalXp } from "../gamification";
+import { HOMEWORK_XP, LEVELS, activityWeek, computeBadges, dayKey, levelFromXp, streakDays, totalXp } from "../gamification";
 import { gradeQuiz } from "../lesson-content";
 import { LessonIdSchema, SubmitHomeworkSchema } from "../validation";
 
@@ -50,6 +50,15 @@ describe("серія днів", () => {
     const days = ["2026-03-27", "2026-03-28", "2026-03-29", "2026-03-30"].map((d) => at(`${d}T10:00:00Z`));
     expect(streakDays(days, at("2026-03-30T10:00:00Z"))).toBe(4);
     expect(dayKey(at("2026-03-29T10:00:00Z"))).toBe("2026-03-29");
+  });
+});
+
+describe("тиждень активності", () => {
+  const now = at("2026-09-28T12:00:00Z");
+  it("7 днів від найстаршого до сьогодні", () => {
+    const week = activityWeek([at("2026-09-28T08:00:00Z"), at("2026-09-24T08:00:00Z")], now);
+    expect(week.map((d) => d.day)).toEqual(["2026-09-22", "2026-09-23", "2026-09-24", "2026-09-25", "2026-09-26", "2026-09-27", "2026-09-28"]);
+    expect(week.filter((d) => d.active).map((d) => d.day)).toEqual(["2026-09-24", "2026-09-28"]);
   });
 });
 

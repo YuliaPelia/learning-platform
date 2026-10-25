@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CabinetShell, Notice, StatusBadge } from "@/components/cabinet-shell";
+import { DeleteAccountForm } from "@/components/delete-account-form";
 import { IconCheck, IconFlame, IconLock, IconPlay, IconStar } from "@/components/icons";
 import { requireUser } from "@/lib/dal";
 import { formatShortDate, pluralDays } from "@/lib/format";
@@ -186,6 +187,14 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
               </div>
             ))}
         </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        {student.parentId ? (
+          <p className="text-sm text-muted">Твій профіль створили батьки — видалити його можуть вони у своєму кабінеті.</p>
+        ) : (
+          <DeleteAccountForm consequences="Буде видалено твій профіль, прогрес, домашки й листування з викладачем. Відновити їх не вийде." />
+        )}
       </section>
     </CabinetShell>
   );

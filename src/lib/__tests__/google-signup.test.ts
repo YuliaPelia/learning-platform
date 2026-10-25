@@ -65,15 +65,21 @@ describe("google signup", () => {
   });
 
   it("дитина створюється без батьків і зі збереженим роком", async () => {
-    await expect(completeGoogleStudent(undefined, form({ name: "Макс", birthYear: "2014" }))).rejects.toThrow("REDIRECT:/cabinet/student");
+    await expect(completeGoogleStudent(undefined, form({ name: "Макс", birthYear: String(new Date().getFullYear() - 15) }))).rejects.toThrow("REDIRECT:/cabinet/student");
     expect(userCreate.mock.calls[0][0].data).toMatchObject({
       role: "student",
       email: "new@gmail.com",
-      birthYear: 2014,
+      birthYear: new Date().getFullYear() - 15,
       passwordHash: null,
     });
     expect(userCreate.mock.calls[0][0].data.parentId).toBeUndefined();
     expect(userCreate.mock.calls[0][0].data.consents).toBeUndefined();
     expect(createSession).toHaveBeenCalledWith("new", "student");
+  });
+
+  it("дитина до 14 років не реєструється сама — лише через батьків", async () => {
+    const r = await completeGoogleStudent(undefined, form({ name: "Макс", birthYear: String(new Date().getFullYear() - 12) }));
+    expect(r?.error).toMatch(/з 14 років/);
+    expect(userCreate).not.toHaveBeenCalled();
   });
 });

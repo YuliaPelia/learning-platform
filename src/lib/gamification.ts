@@ -49,6 +49,14 @@ export function streakDays(activity: Date[], now: Date = new Date()): number {
   return streak;
 }
 
+/** Останні `count` днів (від найстаршого до сьогодні) з позначкою, чи було навчання цього дня. */
+export function activityWeek(activity: Date[], now: Date = new Date(), count = 7): { day: string; active: boolean }[] {
+  const days = new Set(activity.map((d) => dayKey(d)));
+  const keys = [dayKey(now)];
+  while (keys.length < count) keys.unshift(prevDayKey(keys[0]));
+  return keys.map((day) => ({ day, active: days.has(day) }));
+}
+
 /** XP за здану (або зараховану) домашку. */
 export const HOMEWORK_XP = 50;
 

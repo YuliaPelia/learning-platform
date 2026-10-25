@@ -48,13 +48,21 @@ export const GoogleParentSchema = z.object({
   ageConfirm: z.literal("on", { error: "Потрібно підтвердити, що вам є 18 років" }),
 });
 
+/**
+ * Самостійно (без батьків) зареєструватися може лише учень від 14 років — так обіцяє політика
+ * конфіденційності: дані дітей до 14 років ми отримуємо лише від батьків, разом з їхньою згодою.
+ * Відомий лише рік народження, тож межа консервативна: точно виповнилося 14.
+ */
+export const MIN_SELF_SIGNUP_AGE = 14;
+export const SELF_SIGNUP_TOO_YOUNG = "Самостійно зареєструватися можна з 14 років. Попроси батьків створити тобі профіль у їхньому кабінеті — і входь за логіном від них.";
+
 export const GoogleStudentSchema = z.object({
   name: z.string().trim().min(2, { error: "Вкажіть ім'я або нікнейм" }).max(40),
   birthYear: z.coerce
     .number({ error: "Вкажіть рік народження" })
     .int()
     .min(currentYear - 18, { error: "Платформа для дітей 9–17 років" })
-    .max(currentYear - 8, { error: "Платформа для дітей 9–17 років" }),
+    .max(currentYear - MIN_SELF_SIGNUP_AGE - 1, { error: SELF_SIGNUP_TOO_YOUNG }),
 });
 
 export const CheckoutSchema = z.object({

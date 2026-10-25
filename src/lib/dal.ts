@@ -13,7 +13,9 @@ import { readSession } from "./session";
 export const getCurrentUser = cache(async () => {
   const session = await readSession();
   if (!session) return null;
-  return prisma.user.findUnique({ where: { id: session.userId } });
+  // Видалений акаунт — як вихід: стара сесія більше нічого не відкриває
+  const user = await prisma.user.findUnique({ where: { id: session.userId } });
+  return user && !user.deletedAt ? user : null;
 });
 
 /** Вимагає вхід (і, якщо вказано, конкретну роль). Інакше — на сторінку входу. */

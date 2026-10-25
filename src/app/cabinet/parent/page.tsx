@@ -4,6 +4,7 @@ import { prisma } from "@/db";
 import { AddChildForm } from "@/components/add-child-form";
 import { CancelSubscriptionForm, DeleteChildForm } from "@/components/parent-forms";
 import { CabinetShell, Notice, StatusBadge } from "@/components/cabinet-shell";
+import { DeleteAccountForm } from "@/components/delete-account-form";
 import { isSubscriptionLive } from "@/lib/access";
 import { getChildren, requireUser } from "@/lib/dal";
 import { PAYMENT_STATUS_LABELS, SUBSCRIPTION_STATUS_LABELS, formatDate, formatShortDate, formatUah } from "@/lib/format";
@@ -218,6 +219,9 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
             </div>
           </div>
         )}
+        <div className="flex flex-col gap-3 border-t border-line pt-4">
+          <DeleteAccountForm consequences="Буде скасовано всі підписки й регулярні списання, видалено профілі дітей з їхнім прогресом і домашками, а ваші ім'я, email і вхід — стерто. Записи про платежі та прийняті згоди зберігаються без ваших персональних даних, як того вимагає облік." />
+        </div>
       </section>
     </CabinetShell>
   );

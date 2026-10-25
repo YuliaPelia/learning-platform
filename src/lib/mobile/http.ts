@@ -23,8 +23,9 @@ export const badRequest = (message = "Некоректний запит") => api
 /** Мобільний додаток — для батьків і дітей; викладачі й адміни працюють у вебі. */
 export const MOBILE_ROLES = ["parent", "student"] as const;
 
-export function publicUser(u: { id: string; name: string; role: string; email: string | null; login: string; birthYear: number | null }) {
-  return { id: u.id, name: u.name, role: u.role, email: u.email, login: u.login, birthYear: u.birthYear };
+export function publicUser(u: { id: string; name: string; role: string; email: string | null; login: string; birthYear: number | null; parentId?: string | null }) {
+  // hasParent: профіль учня створили батьки — видаляти його можуть лише вони
+  return { id: u.id, name: u.name, role: u.role, email: u.email, login: u.login, birthYear: u.birthYear, hasParent: !!u.parentId };
 }
 
 /** Користувач за заголовком Authorization: Bearer <access>. null — немає або недійсний токен. */
@@ -35,7 +36,7 @@ export async function getMobileUser(request: Request) {
   const userId = await verifyAccessToken(token);
   if (!userId) return null;
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  return user && (MOBILE_ROLES as readonly string[]).includes(user.role) ? user : null;
+  return user && !user.deletedAt && (MOBILE_ROLES as readonly string[]).includes(user.role) ? user : null;
 }
 
 /** Для захищених ендпоінтів: або користувач, або готова відповідь 401. */

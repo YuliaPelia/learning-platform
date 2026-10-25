@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/db";
 import type { Plan as PlanRow, Subscription } from "@/generated/prisma/client";
 import { canAccessLesson, findCoveringSubscription, isSubscriptionLive, type AccessReason, type SubscriptionLike } from "./access";
-import { computeBadges, levelFromXp, streakDays, totalXp } from "./gamification";
+import { activityWeek, computeBadges, levelFromXp, streakDays, totalXp } from "./gamification";
 import { PLANS, type Plan, type PlanId } from "./plans";
 
 /** Підписка з бази → форма, з якою працюють чисті правила доступу (access.ts). */
@@ -141,6 +141,7 @@ export async function getStudentOverview(studentId: string) {
     xp,
     level,
     streak,
+    week: activityWeek(activity),
     badges,
     badgesEnabled: !!plan && PLANS[plan].badges,
     plan,

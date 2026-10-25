@@ -87,6 +87,8 @@ model User {
   name         String
   birthYear    Int?     @map("birth_year") // зберігаємо рік, а не вік: вік змінюється щороку
   createdAt    DateTime @default(now()) @map("created_at")
+  // Акаунт видалено на вимогу користувача: персональні дані стерто, рядок лишився для платежів і згод
+  deletedAt    DateTime? @map("deleted_at")
 
   // Для дитини — посилання на батьківський акаунт
   parentId String? @map("parent_id") @db.Uuid

@@ -2,12 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/db";
+import { deleteStudentProfile } from "@/lib/account";
 import { requireUser } from "@/lib/dal";
 import { hashPassword } from "@/lib/password";
 import { LEGAL_VERSION } from "@/lib/plans";
 import { requestMeta } from "@/lib/request";
 import { ChildIdSchema, ChildSchema, firstError, keepValues, type FormState } from "@/lib/validation";
-import { getWfpConfig, removeRegularPayment } from "@/lib/wayforpay";
 
 export async function addChild(_prev: FormState, formData: FormData): Promise<FormState> {
   const parent = await requireUser("parent");
@@ -51,22 +51,8 @@ export async function deleteChild(_prev: FormState, formData: FormData): Promise
   const child = await prisma.user.findFirst({ where: { id: childId, parentId: parent.id } });
   if (!child) return {};
 
-  const subs = await prisma.subscription.findMany({
-    where: { studentId: child.id, status: { in: ["active", "past_due"] } },
-  });
-  const cfg = getWfpConfig();
-  for (const s of subs) {
-    if (cfg) {
-      const ok = await removeRegularPayment(cfg, s.orderReference).catch(() => false);
-      if (!ok) {
-        // Не видаляємо дитину, поки WayForPay не підтвердив зупинку списань
-        console.error("Не вдалося скасувати регулярний платіж — профіль дитини не видалено", s.orderReference);
-        return { error: "Не вдалося скасувати підписку в платіжній системі, тож профіль не видалено. Спробуйте пізніше або напишіть на itcodecraft@gmail.com." };
-      }
-    }
-    await prisma.subscription.update({ where: { id: s.id }, data: { status: "canceled", canceledAt: new Date() } });
-  }
-  await prisma.user.delete({ where: { id: child.id } });
+  const res = await deleteStudentProfile(child.id);
+  if (!res.ok) return { error: res.error };
   revalidatePath("/cabinet/parent");
   return { ok: true };
 }

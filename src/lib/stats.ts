@@ -23,7 +23,7 @@ export async function getSiteStats(now = new Date()) {
     courses,
     lessonsTotal,
   ] = await Promise.all([
-    prisma.user.groupBy({ by: ["role"], _count: { _all: true } }),
+    prisma.user.groupBy({ by: ["role"], where: { deletedAt: null }, _count: { _all: true } }),
     prisma.user.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } }),
     prisma.subscription.aggregate({ where: { status: "active" }, _count: { _all: true }, _sum: { amount: true } }),
     prisma.subscription.groupBy({ by: ["planId"], where: { status: "active" }, _count: { _all: true } }),
