@@ -346,6 +346,18 @@ model LoginAttempt {
   @@map("login_attempts")
 }
 
+/// Одноразовий код підтвердження пошти перед створенням акаунта батьків.
+/// Зберігаємо лише HMAC коду. Новий лист замінює попередній код для цієї адреси.
+model EmailCode {
+  email     String   @id
+  codeHash  String   @map("code_hash")
+  expiresAt DateTime @map("expires_at")
+  sentAt    DateTime @map("sent_at")
+  attempts  Int      @default(0)
+
+  @@map("email_codes")
+}
+
 // ───────────── refresh_tokens (мобільний додаток) ─────────────
 // Довгоживучий токен оновлення. Зберігаємо лише SHA-256 хеш: витік бази не дає доступу.
 // Токен одноразовий: при оновленні видається новий, а старий позначається revokedAt.

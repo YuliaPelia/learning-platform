@@ -15,6 +15,9 @@ export const RegisterSchema = z.object({
   ageConfirm: z.literal("on", { error: "Потрібно підтвердити, що вам є 18 років" }),
 });
 
+/** Код із листа під час реєстрації в застосунку. */
+export const EmailCodeSchema = z.string().regex(/^\d{6}$/, { error: "Введіть код із 6 цифр" });
+
 export const LoginSchema = z.object({
   login: z.string().trim().toLowerCase().min(2, { error: "Вкажіть email або логін" })
     .max(100, { error: "Логін занадто довгий" }),
