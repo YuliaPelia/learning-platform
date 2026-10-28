@@ -22,6 +22,12 @@ enum PlanCode {
   premium
 }
 
+enum BillingProvider {
+  wayforpay // картка на сайті
+  apple // App Store (In-App Purchase)
+  google // Google Play Billing
+}
+
 enum BillingPeriod {
   month
   year
@@ -142,7 +148,14 @@ model Subscription {
   courseId  String? @map("course_id") @db.Uuid
   course    Course? @relation(fields: [courseId], references: [id], onDelete: Restrict)
 
-  orderReference String @unique @map("order_reference") // наш номер замовлення в WayForPay
+  // Звідки підписка. Для apple/google: externalId — originalTransactionId (Apple) або purchaseToken (Google),
+  // storeProductId — id товару в магазині, slot — «місце дитини» (група підписок у магазині)
+  provider       BillingProvider @default(wayforpay)
+  externalId     String?         @unique @map("external_id")
+  storeProductId String?         @map("store_product_id")
+  slot           Int?
+
+  orderReference String @unique @map("order_reference") // наш номер замовлення (для IAP — IAP-<провайдер>-<хеш externalId>)
   amount         Int // сума щомісячного списання, у копійках
 
   status               SubscriptionStatus @default(pending)
