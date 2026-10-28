@@ -10,22 +10,26 @@ export async function generateMetadata({ params }: PageProps<"/legal/[doc]">): P
   return { title: LEGAL_DOCS[doc]?.title ?? "Документ" };
 }
 
-export default async function LegalPage({ params }: PageProps<"/legal/[doc]">) {
+/**
+ * `?embed=1` — документ без шапки й підвалу сайту: так його відкриває мобільний застосунок.
+ * З меню сайту з застосунку можна було б дійти до тарифів, а App Store забороняє вести до оплати поза ним.
+ */
+export default async function LegalPage({ params, searchParams }: PageProps<"/legal/[doc]">) {
   const { doc } = await params;
+  const { embed } = await searchParams;
   const d = LEGAL_DOCS[doc];
   if (!d) notFound();
-  return (
-    <PublicShell>
-      <article className="mx-auto flex max-w-[820px] flex-col gap-6 px-4 py-14 md:px-6">
-        {!d.final && (
-          <p className="rounded-2xl border border-amber/50 bg-amber/15 px-5 py-4 text-amber">
-            ЧЕРНЕТКА. Перед запуском оплат цей документ має перевірити юрист. Дані у квадратних дужках — замінити реальними.
-          </p>
-        )}
-        <h1 className="font-display text-3xl font-bold md:text-4xl">{d.title}</h1>
-        <p className="text-muted">Редакція від {d.edition ?? LEGAL_VERSION}</p>
-        <Markdown source={d.body} />
-      </article>
-    </PublicShell>
+  const article = (
+    <article className="mx-auto flex max-w-[820px] flex-col gap-6 px-4 py-14 md:px-6">
+      {!d.final && (
+        <p className="rounded-2xl border border-amber/50 bg-amber/15 px-5 py-4 text-amber">
+          ЧЕРНЕТКА. Перед запуском оплат цей документ має перевірити юрист. Дані у квадратних дужках — замінити реальними.
+        </p>
+      )}
+      <h1 className="font-display text-3xl font-bold md:text-4xl">{d.title}</h1>
+      <p className="text-muted">Редакція від {d.edition ?? LEGAL_VERSION}</p>
+      <Markdown source={d.body} />
+    </article>
   );
+  return embed ? <main>{article}</main> : <PublicShell>{article}</PublicShell>;
 }

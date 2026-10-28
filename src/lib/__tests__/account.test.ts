@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { subFindMany, subUpdate, userDelete, userDeleteMany, userUpdate, tokenDeleteMany, transaction, getWfpConfig, removeRegularPayment } = vi.hoisted(() => ({
+const { paymentUpdateMany, subUpdateMany, subFindMany, subUpdate, userDelete, userDeleteMany, userUpdate, tokenDeleteMany, transaction, getWfpConfig, removeRegularPayment } = vi.hoisted(() => ({
+  paymentUpdateMany: vi.fn(),
+  subUpdateMany: vi.fn(),
   subFindMany: vi.fn(),
   subUpdate: vi.fn(),
   userDelete: vi.fn(),
@@ -15,7 +17,8 @@ const { subFindMany, subUpdate, userDelete, userDeleteMany, userUpdate, tokenDel
 vi.mock("server-only", () => ({}));
 vi.mock("@/db", () => ({
   prisma: {
-    subscription: { findMany: subFindMany, update: subUpdate },
+    subscription: { findMany: subFindMany, update: subUpdate, updateMany: subUpdateMany },
+    payment: { updateMany: paymentUpdateMany },
     user: { delete: userDelete, deleteMany: userDeleteMany, update: userUpdate },
     refreshToken: { deleteMany: tokenDeleteMany },
     $transaction: transaction,
@@ -25,7 +28,8 @@ vi.mock("@/lib/wayforpay", () => ({ getWfpConfig, removeRegularPayment }));
 
 import { deleteAccount, deleteStudentProfile } from "@/lib/account";
 
-const live = { id: "s1", orderReference: "ORD-1" };
+const live = { id: "s1", orderReference: "ORD-1", status: "active" };
+const pending = { id: "s2", orderReference: "ORD-2", status: "pending" };
 
 describe("видалення акаунта", () => {
   beforeEach(() => {
@@ -61,6 +65,16 @@ describe("видалення акаунта", () => {
     const data = userUpdate.mock.calls[0][0].data;
     expect(data).toMatchObject({ email: null, passwordHash: null, googleSub: null, appleSub: null, birthYear: null, login: "deleted-p1" });
     expect(data.deletedAt).toBeInstanceOf(Date);
+    expect(paymentUpdateMany).toHaveBeenCalledWith(expect.objectContaining({ where: { subscription: { userId: "p1" } } }));
+    expect(subUpdateMany).toHaveBeenCalledWith({ where: { userId: "p1" }, data: { recToken: null } });
+  });
+
+  it("незавершена оплата скасовується без звернення до WayForPay", async () => {
+    subFindMany.mockResolvedValue([pending]);
+    expect(await deleteAccount({ id: "p1", role: "parent", parentId: null })).toEqual({ ok: true });
+    expect(subFindMany.mock.calls[0][0].where.status).toEqual({ in: ["active", "past_due", "pending"] });
+    expect(removeRegularPayment).not.toHaveBeenCalled();
+    expect(subUpdate).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "s2" } }));
   });
 
   it("якщо WayForPay не зупинив списання — нічого не видаляємо", async () => {

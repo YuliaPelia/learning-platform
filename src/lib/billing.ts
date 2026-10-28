@@ -52,13 +52,13 @@ type Tx = Prisma.TransactionClient;
  * Записує платіж (один рядок на orderReference). Повертає false, якщо такий самий
  * статус уже записано — тобто це повторний callback і робити нічого не треба.
  */
-async function recordPayment(tx: Tx, subscriptionId: string, cb: WfpCallback, status: PaymentStatus) {
+async function recordPayment(tx: Tx, subscriptionId: string, cb: WfpCallback, status: PaymentStatus, keepRaw = true) {
   const paidAt = status === "approved" ? new Date((cb.processingDate ?? Math.floor(Date.now() / 1000)) * 1000) : null;
   const data = {
     amount: toKopecks(cb.amount),
     currency: cb.currency,
     status,
-    raw: cb as unknown as Prisma.InputJsonValue,
+    raw: keepRaw ? (cb as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
     paidAt,
   };
   const existing = await tx.payment.findUnique({ where: { orderId: cb.orderReference } });
@@ -103,7 +103,8 @@ export async function applyPaymentEvent(cb: WfpCallback): Promise<"ok" | "duplic
 
   const planName = sub.plan.name;
   const outcome = await prisma.$transaction(async (tx): Promise<Outcome> => {
-    if (!(await recordPayment(tx, sub.id, cb, status))) return { result: "duplicate" };
+    // Акаунт платника видалено: платіж фіксуємо для обліку, але без сирих даних платіжки
+    if (!(await recordPayment(tx, sub.id, cb, status, !sub.user.deletedAt))) return { result: "duplicate" };
 
     switch (status) {
       case "approved": {

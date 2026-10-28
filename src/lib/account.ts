@@ -1,31 +1,38 @@
 import "server-only";
 import { prisma } from "@/db";
-import type { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { getWfpConfig, removeRegularPayment } from "@/lib/wayforpay";
 
 export type DeleteResult = { ok: true } | { ok: false; error: string };
 
-const WFP_ERROR =
-  "Не вдалося скасувати підписку в платіжній системі, тож нічого не видалено. Спробуйте пізніше або напишіть на itcodecraft@gmail.com.";
+const wfpError = (canceledBefore: number) =>
+  "Не вдалося скасувати підписку в платіжній системі, тож акаунт не видалено" +
+  (canceledBefore ? ` (${canceledBefore} інших підписок уже скасовано)` : "") +
+  ". Спробуйте пізніше або напишіть на itcodecraft@gmail.com.";
 
 /**
- * Зупиняє діючі регулярні списання й позначає підписки скасованими.
- * false — WayForPay не підтвердив зупинку: тоді нічого не видаляємо, щоб не списувати гроші за видалений акаунт.
+ * Зупиняє регулярні списання й позначає підписки скасованими — і діючі, і незавершені (pending):
+ * інакше оплата, завершена вже після видалення, активувала б підписку.
+ * Повертає null, якщо все скасовано, або повідомлення про помилку: WayForPay не підтвердив зупинку,
+ * тож нічого не видаляємо, щоб не списувати гроші за видалений акаунт.
  */
-async function cancelLiveSubscriptions(where: Prisma.SubscriptionWhereInput): Promise<boolean> {
-  const subs = await prisma.subscription.findMany({ where: { ...where, status: { in: ["active", "past_due"] } } });
+async function cancelSubscriptions(where: Prisma.SubscriptionWhereInput): Promise<string | null> {
+  const subs = await prisma.subscription.findMany({ where: { ...where, status: { in: ["active", "past_due", "pending"] } } });
   const cfg = getWfpConfig();
+  let canceled = 0;
   for (const s of subs) {
-    if (cfg) {
+    // У незавершеної оплати ще немає регулярного платежу — у WayForPay зупиняти нічого
+    if (cfg && s.status !== "pending") {
       const ok = await removeRegularPayment(cfg, s.orderReference).catch(() => false);
       if (!ok) {
         console.error("Не вдалося скасувати регулярний платіж — видалення зупинено", s.orderReference);
-        return false;
+        return wfpError(canceled);
       }
     }
     await prisma.subscription.update({ where: { id: s.id }, data: { status: "canceled", canceledAt: new Date() } });
+    canceled++;
   }
-  return true;
+  return null;
 }
 
 /**
@@ -33,7 +40,8 @@ async function cancelLiveSubscriptions(where: Prisma.SubscriptionWhereInput): Pr
  * Платежі й згоди лишаються для обліку, але більше не пов'язані з дитиною.
  */
 export async function deleteStudentProfile(studentId: string): Promise<DeleteResult> {
-  if (!(await cancelLiveSubscriptions({ studentId }))) return { ok: false, error: WFP_ERROR };
+  const error = await cancelSubscriptions({ studentId });
+  if (error) return { ok: false, error };
   await prisma.user.delete({ where: { id: studentId } });
   return { ok: true };
 }
@@ -43,7 +51,8 @@ export async function deleteStudentProfile(studentId: string): Promise<DeleteRes
  *  - учень, що зареєструвався сам, — видаляється повністю;
  *  - учня, створеного батьками, видаляють батьки (його дані — під їхньою згодою);
  *  - батьки: скасовуються всі списання, профілі дітей видаляються, а сам акаунт знеособлюється —
- *    до нього прив'язані платежі й згоди, які треба зберігати, тож рядок лишається без персональних даних.
+ *    до нього прив'язані платежі й згоди, які треба зберігати для обліку. Лишаються: сума, дата й номер
+ *    замовлення платежів; дата, версія документа, IP і браузер у записах згод.
  */
 export async function deleteAccount(user: { id: string; role: string; parentId: string | null }): Promise<DeleteResult> {
   if (user.role === "student") {
@@ -54,11 +63,14 @@ export async function deleteAccount(user: { id: string; role: string; parentId: 
   }
   if (user.role !== "parent") return { ok: false, error: "Цей акаунт видаляє адміністратор платформи." };
 
-  if (!(await cancelLiveSubscriptions({ OR: [{ userId: user.id }, { student: { parentId: user.id } }] }))) {
-    return { ok: false, error: WFP_ERROR };
-  }
+  const error = await cancelSubscriptions({ OR: [{ userId: user.id }, { student: { parentId: user.id } }] });
+  if (error) return { ok: false, error };
   await prisma.$transaction([
     prisma.user.deleteMany({ where: { parentId: user.id } }),
+    // Для обліку лишаються сума, дата й номер замовлення; сирий callback платіжки (email, телефон,
+    // маска картки) і токен регулярних списань стираємо
+    prisma.payment.updateMany({ where: { subscription: { userId: user.id } }, data: { raw: Prisma.DbNull } }),
+    prisma.subscription.updateMany({ where: { userId: user.id }, data: { recToken: null } }),
     prisma.refreshToken.deleteMany({ where: { userId: user.id } }),
     prisma.user.update({
       where: { id: user.id },

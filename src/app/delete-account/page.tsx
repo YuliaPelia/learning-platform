@@ -20,7 +20,8 @@ export default async function DeleteAccountPage({ searchParams }: PageProps<"/de
             <li><b className="text-text">У мобільному додатку:</b> Профіль → «Видалити акаунт».</li>
             <li>
               <b className="text-text">На сайті:</b> увійдіть і відкрийте{" "}
-              <Link href="/cabinet/parent#documents" className="text-accent underline">кабінет</Link> → «Документи й дані» → «Видалити мій акаунт».
+              кабінет: батьки — <Link href="/cabinet/parent#documents" className="text-accent underline">«Документи й дані»</Link>, учні —{" "}
+              <Link href="/cabinet/student" className="text-accent underline">унизу сторінки кабінету</Link> → «Видалити мій акаунт».
             </li>
             <li><b className="text-text">Профіль дитини</b> видаляють батьки — у кабінеті на сайті або в додатку (Профіль → Діти).</li>
             <li>
@@ -42,8 +43,8 @@ export default async function DeleteAccountPage({ searchParams }: PageProps<"/de
         <section className="flex flex-col gap-3">
           <h2 className="text-xl font-bold">Що зберігається</h2>
           <p className="leading-relaxed text-soft">
-            Записи про платежі та прийняті документи (оферта, згоди) зберігаються без ваших персональних даних — вони потрібні для бухгалтерського
-            обліку й вирішення спорів у строки, визначені законодавством. Детальніше — у{" "}
+            Для бухгалтерського обліку й вирішення спорів у строки, визначені законодавством, зберігаються лише сума, дата й номер замовлення кожного платежу, а також дата, версія документа, IP-адреса й браузер у момент прийняття кожної згоди. Відповідь
+            платіжної системи (email, телефон, маска картки) і токен регулярних списань видаляються. Детальніше — у{" "}
             <Link href="/legal/privacy" className="text-accent underline">Політиці конфіденційності</Link>.
           </p>
         </section>
