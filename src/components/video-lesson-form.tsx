@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { addVideoLesson } from "@/actions/videos";
+import { FileUpload } from "@/components/file-upload";
 import { Notice } from "@/components/notice";
 import { SelectField } from "@/components/select-field";
 
@@ -10,6 +11,13 @@ export function VideoLessonForm({ courses }: { courses: { id: string; title: str
   const [state, action, pending] = useActionState(addVideoLesson, undefined);
   const formRef = useRef<HTMLFormElement>(null);
   const v = state?.values ?? {};
+  const [videoUrl, setVideoUrl] = useState(v.videoUrl ?? "");
+  // Після успішного додавання очищаємо й посилання (воно керується станом, reset() його не чіпає)
+  const [seen, setSeen] = useState(state);
+  if (state !== seen) {
+    setSeen(state);
+    if (state?.ok) setVideoUrl("");
+  }
 
   // Після успішного збереження очищаємо поля, щоб не випадково додати той самий урок двічі
   useEffect(() => {
@@ -42,8 +50,9 @@ export function VideoLessonForm({ courses }: { courses: { id: string; title: str
         </div>
         <div className="md:col-span-2">
           <label htmlFor="video-url" className="label">Посилання на відео</label>
-          <input id="video-url" name="videoUrl" type="url" className="field" required maxLength={500} placeholder="https://www.youtube.com/watch?v=…" defaultValue={v.videoUrl} />
-          <p className="mt-1.5 text-sm text-faint">YouTube, Vimeo або пряме https-посилання на файл .mp4 / .webm</p>
+          <input id="video-url" name="videoUrl" type="url" className="field" required maxLength={500} placeholder="https://www.youtube.com/watch?v=…" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
+          <p className="mt-1.5 mb-3 text-sm text-faint">Вставте посилання (YouTube, Vimeo, .mp4 / .webm) або завантажте файл нижче</p>
+          <FileUpload kind="video" value={videoUrl} onChange={setVideoUrl} label="відеофайл" />
         </div>
         <div>
           <label htmlFor="video-xp" className="label">XP за проходження</label>

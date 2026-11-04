@@ -93,6 +93,13 @@ export const CourseSchema = z
     ageTo: z.coerce.number({ error: "Вкажіть вік" }).int().min(5).max(18),
     status: z.enum(["published", "soon"]),
     minPlan: z.enum(["basic", "standard", "premium"]),
+    // Порожньо — без обкладинки; інакше https-посилання (завантажене через /api/upload)
+    coverUrl: z
+      .string()
+      .trim()
+      .max(500)
+      .refine((u) => u === "" || /^https:\/\//i.test(u), { error: "Некоректне посилання на обкладинку" })
+      .default(""),
     sortOrder: z.coerce.number().int().min(0).max(9999),
   })
   .refine((c) => c.ageFrom <= c.ageTo, { error: "Вік «від» не може бути більшим за вік «до»" });

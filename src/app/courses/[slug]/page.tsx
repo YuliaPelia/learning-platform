@@ -27,6 +27,10 @@ export default async function CoursePage({ params, searchParams }: PageProps<"/c
     <PublicShell>
       <div className="mx-auto flex max-w-[960px] flex-col gap-8 px-4 py-14 md:px-6">
         {sp.finished && <Notice tone="success">Ти пройшов(-ла) всі уроки курсу! 🎉 Скоро тут з’являться нові модулі.</Notice>}
+        {course.coverUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={course.coverUrl} alt="" className="aspect-[16/9] max-h-[420px] w-full rounded-3xl object-cover" />
+        )}
         <div className="flex flex-col gap-4">
           <span className="text-muted">
             {course.ageFrom}–{course.ageTo} років · {items.length} уроків · перші {FREE_LESSONS} безкоштовно

@@ -205,6 +205,8 @@ model Course {
   ageFrom     Int            @map("age_from")
   ageTo       Int            @map("age_to")
   status      CourseStatus   @default(soon)
+  // Обкладинка курсу (публічне посилання Vercel Blob); null — без обкладинки
+  coverUrl    String?        @map("cover_url")
   sortOrder   Int            @default(0) @map("sort_order")
 
   // Мінімальний тариф для доступу. Звичайні курси — basic; новинки, які спершу

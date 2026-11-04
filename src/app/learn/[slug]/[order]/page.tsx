@@ -92,7 +92,7 @@ export default async function LessonPage({ params, searchParams }: PageProps<"/l
               {content.videoUrl && (
                 <div className="aspect-video overflow-hidden rounded-3xl bg-surface">
                   {/\.(mp4|webm)(\?|$)/i.test(content.videoUrl) ? (
-                    <video src={content.videoUrl} controls controlsList="nodownload" className="h-full w-full" />
+                    <video src={content.videoUrl} controls controlsList="nodownload" playsInline preload="metadata" poster={state.course.coverUrl ?? undefined} className="h-full w-full" />
                   ) : (
                     <iframe src={content.videoUrl} title={lesson.title} className="h-full w-full" allowFullScreen />
                   )}

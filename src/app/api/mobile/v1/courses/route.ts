@@ -17,6 +17,7 @@ export async function GET() {
         ageFrom: c.ageFrom,
         ageTo: c.ageTo,
         status: c.status,
+        coverUrl: c.coverUrl,
         lessonsCount: c._count.lessons,
         freeLessons: FREE_LESSONS,
       })),

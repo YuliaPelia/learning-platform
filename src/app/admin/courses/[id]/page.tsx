@@ -102,6 +102,7 @@ export default async function AdminCoursePage({ params, searchParams }: PageProp
             ageTo: String(course.ageTo),
             status: course.status,
             minPlan: course.minPlan.code,
+            coverUrl: course.coverUrl ?? "",
             sortOrder: String(course.sortOrder),
           }}
         />

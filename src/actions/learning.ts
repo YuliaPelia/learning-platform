@@ -3,81 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/db";
-import { canAccessLesson, canSubmitHomework } from "@/lib/access";
+import { canSubmitHomework } from "@/lib/access";
 import { requireUser } from "@/lib/dal";
 import { gradeQuiz, parseLessonContent } from "@/lib/lesson-content";
-import { bestLivePlan, getStudentSubscriptions } from "@/lib/learning";
+import { loadAccessibleLesson, recordLessonCompletion, recordQuizFailure, type LoadedLesson } from "@/lib/lesson-progress";
 import { appUrl, sendEmail } from "@/lib/mailer";
-import { PLANS } from "@/lib/plans";
 import { LessonIdSchema, SubmitHomeworkSchema } from "@/lib/validation";
 
-const DAY = 24 * 60 * 60 * 1000;
-
-/** Урок з курсом і домашкою + повторна перевірка доступу на сервері (кнопку в браузері можна підробити). */
-async function loadAccessibleLesson(studentId: string, lessonId: string) {
-  const lesson = await prisma.lesson.findUnique({
-    where: { id: lessonId },
-    include: { course: { include: { minPlan: true } }, homework: true },
-  });
-  if (!lesson) return null;
-  const { course } = lesson;
-
-  let prevDone = true;
-  if (lesson.order > 1) {
-    const prev = await prisma.lesson.findUnique({
-      where: { courseId_order: { courseId: course.id, order: lesson.order - 1 } },
-      select: { id: true },
-    });
-    prevDone = prev
-      ? !!(await prisma.progress.findFirst({ where: { userId: studentId, lessonId: prev.id, completed: true } }))
-      : true;
-  }
-  const subs = await getStudentSubscriptions(studentId);
-  const access = canAccessLesson({
-    courseStatus: course.status,
-    courseId: course.id,
-    minPlan: course.minPlan.code,
-    lessonOrder: lesson.order,
-    previousLessonCompleted: prevDone,
-    subscriptions: subs,
-  });
-  return access === "ok" ? { lesson, course, subs } : null;
-}
-
 /** Записує проходження уроку, видає домашку (якщо є) і веде далі. */
-async function finishLesson(
-  studentId: string,
-  loaded: NonNullable<Awaited<ReturnType<typeof loadAccessibleLesson>>>,
-  score: number | null,
-) {
-  const { lesson, course, subs } = loaded;
-  const now = new Date();
-  // Ідемпотентно: уже пройдений урок не оновлюємо (інакше повтор зсуває дату/бал і серію днів)
-  await prisma.progress.upsert({
-    where: { userId_lessonId: { userId: studentId, lessonId: lesson.id } },
-    create: { userId: studentId, lessonId: lesson.id, completed: true, completedAt: now, score },
-    update: {},
-  });
-  await prisma.progress.updateMany({
-    where: { userId: studentId, lessonId: lesson.id, completed: false },
-    data: { completed: true, completedAt: now, score },
-  });
-
-  if (lesson.homework) {
-    const plan = bestLivePlan(subs);
-    // Повторне проходження уроку не змінює вже видану домашку
-    await prisma.submission.upsert({
-      where: { homeworkId_userId: { homeworkId: lesson.homework.id, userId: studentId } },
-      create: {
-        homeworkId: lesson.homework.id,
-        userId: studentId,
-        status: "pending",
-        dueAt: lesson.homework.deadline ?? new Date(now.getTime() + lesson.homework.dueDays * DAY),
-        needsTeacher: !!plan && PLANS[plan].teacher,
-      },
-      update: {},
-    });
-  }
+async function finishLesson(studentId: string, loaded: LoadedLesson, score: number | null) {
+  const { lesson, course } = loaded;
+  await recordLessonCompletion(studentId, loaded, score);
 
   revalidatePath(`/learn/${course.slug}`, "layout");
   revalidatePath("/cabinet/student");
@@ -119,16 +55,7 @@ export async function submitQuiz(formData: FormData) {
   const score = result.total ? Math.round((result.correct / result.total) * 100) : 100;
 
   if (!result.passed) {
-    await prisma.progress.upsert({
-      where: { userId_lessonId: { userId: student.id, lessonId: loaded.lesson.id } },
-      create: { userId: student.id, lessonId: loaded.lesson.id, completed: false, score },
-      update: {},
-    });
-    // Уже пройдений тест не "розпроходиться" і не втрачає бал через невдалу повторну спробу
-    await prisma.progress.updateMany({
-      where: { userId: student.id, lessonId: loaded.lesson.id, completed: false },
-      data: { score },
-    });
+    await recordQuizFailure(student.id, loaded.lesson.id, score);
     redirect(`/learn/${loaded.course.slug}/${loaded.lesson.order}?quiz=${result.correct}-${result.total}`);
   }
   await finishLesson(student.id, loaded, score);

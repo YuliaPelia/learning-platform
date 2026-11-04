@@ -27,6 +27,7 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/mobile/v
       ageFrom: course.ageFrom,
       ageTo: course.ageTo,
       status: course.status,
+      coverUrl: course.coverUrl,
       freeLessons: FREE_LESSONS,
       completedCount: student ? state.completedCount : null,
     },

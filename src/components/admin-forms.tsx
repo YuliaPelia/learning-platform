@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { saveCourse, saveLesson } from "@/actions/admin";
 import { CATEGORY_LABELS } from "@/lib/format";
+import { FileUpload } from "@/components/file-upload";
 import { SelectField } from "@/components/select-field";
 import type { QuizQuestion } from "@/lib/lesson-content";
 
@@ -25,6 +26,7 @@ export type CourseFormValues = {
   ageTo: string;
   status: string;
   minPlan: string;
+  coverUrl: string;
   sortOrder: string;
 };
 
@@ -41,6 +43,7 @@ export function CourseForm({
   const v = { ...initial, ...state?.values };
   // key — щоб після збереження поля показували те, що щойно ввели (форма скидається до defaultValue)
   const formKey = JSON.stringify(v);
+  const [coverUrl, setCoverUrl] = useState(initial.coverUrl);
 
   return (
     <form key={formKey} action={action} className="grid gap-4 md:grid-cols-2">
@@ -53,6 +56,12 @@ export function CourseForm({
         <label htmlFor="course-slug" className="label">Адреса курсу (slug)</label>
         <input id="course-slug" name="slug" className="field font-mono" required maxLength={40} pattern="[a-z0-9]+(-[a-z0-9]+)*" defaultValue={v.slug} />
         <p className="mt-1.5 text-sm text-faint">Латиницею, напр. python-start → /courses/python-start</p>
+      </div>
+      <div className="flex flex-col gap-2 md:col-span-2">
+        <span className="label">Обкладинка курсу</span>
+        <input type="hidden" name="coverUrl" value={coverUrl} />
+        <FileUpload kind="cover" value={coverUrl} onChange={setCoverUrl} label="обкладинку" />
+        <p className="text-sm text-faint">JPG, PNG або WebP до 5 МБ, краще 16:9 (наприклад, 1280×720). Обкладинку видно на сайті й у застосунку.</p>
       </div>
       <div className="md:col-span-2">
         <label htmlFor="course-description" className="label">Короткий опис</label>
@@ -149,6 +158,7 @@ export function LessonForm({
   const v = { ...initial, ...state?.values };
   const [type, setType] = useState(initial.type);
   const [hasHomework, setHasHomework] = useState(initial.hasHomework);
+  const [videoUrl, setVideoUrl] = useState(initial.videoUrl);
   const [questions, setQuestions] = useState<QuizQuestion[]>(initialQuestions.length ? initialQuestions : [EMPTY_QUESTION]);
 
   const patch = (qi: number, change: Partial<QuizQuestion>) => setQuestions((qs) => qs.map((q, i) => (i === qi ? { ...q, ...change } : q)));
@@ -191,8 +201,10 @@ export function LessonForm({
       {/* Поле лишається у формі й для інших типів (приховане), щоб значення не губилося при перемиканні типу */}
       <div className={type === "video" ? "" : "hidden"}>
         <label htmlFor="lesson-video" className="label">Посилання на відео</label>
-        <input id="lesson-video" name="videoUrl" type="url" className="field" maxLength={500} placeholder="https://www.youtube.com/watch?v=…" defaultValue={v.videoUrl} />
-        <p className="mt-1.5 text-sm text-faint">YouTube, Vimeo або пряме https-посилання на файл .mp4 / .webm</p>
+        <input id="lesson-video" name="videoUrl" type="url" className="field" maxLength={500} placeholder="https://www.youtube.com/watch?v=…" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
+        <p className="mt-1.5 mb-3 text-sm text-faint">Вставте посилання (YouTube, Vimeo, .mp4 / .webm) або завантажте файл нижче</p>
+        <FileUpload kind="video" value={videoUrl} onChange={setVideoUrl} label="відеофайл" />
+        <p className="mt-1.5 text-sm text-faint">MP4 або WebM до 1 ГБ. Після завантаження посилання підставиться саме.</p>
       </div>
 
       <div>

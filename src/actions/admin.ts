@@ -32,7 +32,7 @@ export async function saveCourse(_prev: FormState, formData: FormData): Promise<
 
   const plan = await prisma.plan.findUnique({ where: { code: minPlan }, select: { id: true } });
   if (!plan) return { error: "Такого тарифу немає в базі", values: keepValues(formData) };
-  const data = { ...fields, description: fields.description || null, minPlanId: plan.id };
+  const data = { ...fields, description: fields.description || null, coverUrl: fields.coverUrl || null, minPlanId: plan.id };
 
   if (courseId) {
     const existing = await prisma.course.findUnique({ where: { id: courseId }, select: { id: true } });

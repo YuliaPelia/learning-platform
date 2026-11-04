@@ -31,6 +31,7 @@ export default async function NewCoursePage() {
             ageTo: "17",
             status: "soon",
             minPlan: "basic",
+            coverUrl: "",
             sortOrder: String((last._max.sortOrder ?? -1) + 1),
           }}
         />
