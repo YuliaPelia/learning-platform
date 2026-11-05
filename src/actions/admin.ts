@@ -83,11 +83,18 @@ export async function saveLesson(_prev: FormState, formData: FormData): Promise<
   const lessonId = rawLessonId;
   const hasHomework = formData.get("hasHomework") === "on";
 
+  // Відео обов'язкове лише для відеоуроку; у текстовий урок і тест його можна додати за бажанням
+  const videoError = "Вкажіть посилання на відео: YouTube, Vimeo або https-адресу файлу .mp4/.webm";
+  let videoUrl: string | null = null;
+  if (f.type === "video" || f.videoUrl) {
+    videoUrl = normalizeVideoUrl(f.videoUrl);
+    if (!videoUrl) return fail(videoError);
+  }
+  const video = videoUrl ? { url: videoUrl } : {};
+
   let content: Prisma.InputJsonValue;
   if (f.type === "video") {
-    const url = normalizeVideoUrl(f.videoUrl);
-    if (!url) return fail("Вкажіть посилання на відео: YouTube, Vimeo або https-адресу файлу .mp4/.webm");
-    content = { url, markdown: f.markdown };
+    content = { ...video, markdown: f.markdown };
   } else if (f.type === "quiz") {
     let raw: unknown;
     try {
@@ -97,10 +104,10 @@ export async function saveLesson(_prev: FormState, formData: FormData): Promise<
     }
     const questions = QuizQuestionsSchema.safeParse(raw);
     if (!questions.success) return fail(firstError(questions.error));
-    content = { markdown: f.markdown, questions: questions.data };
+    content = { ...video, markdown: f.markdown, questions: questions.data };
   } else {
     if (!f.markdown.trim()) return fail("Додайте текст уроку");
-    content = { markdown: f.markdown };
+    content = { ...video, markdown: f.markdown };
   }
   if (hasHomework && !f.homeworkTask) return fail("Опишіть домашнє завдання або зніміть позначку «Є домашнє завдання»");
 

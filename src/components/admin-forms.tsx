@@ -198,10 +198,10 @@ export function LessonForm({
         </div>
       </div>
 
-      {/* Поле лишається у формі й для інших типів (приховане), щоб значення не губилося при перемиканні типу */}
-      <div className={type === "video" ? "" : "hidden"}>
-        <label htmlFor="lesson-video" className="label">Посилання на відео</label>
-        <input id="lesson-video" name="videoUrl" type="url" className="field" maxLength={500} placeholder="https://www.youtube.com/watch?v=…" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
+      {/* Відео можна додати до уроку будь-якого типу; обов'язкове лише для відеоуроку */}
+      <div>
+        <label htmlFor="lesson-video" className="label">{type === "video" ? "Посилання на відео" : "Відео до уроку (необов’язково)"}</label>
+        <input id="lesson-video" name="videoUrl" type="url" className="field" required={type === "video"} maxLength={500} placeholder="https://www.youtube.com/watch?v=…" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
         <p className="mt-1.5 mb-3 text-sm text-faint">Вставте посилання (YouTube, Vimeo, .mp4 / .webm) або завантажте файл нижче</p>
         <FileUpload kind="video" value={videoUrl} onChange={setVideoUrl} label="відеофайл" />
         <p className="mt-1.5 text-sm text-faint">MP4 або WebM до 1 ГБ. Після завантаження посилання підставиться саме.</p>

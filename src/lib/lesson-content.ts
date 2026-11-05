@@ -22,7 +22,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 export function parseLessonContent(type: LessonType, content: unknown): LessonContent {
   const c = isRecord(content) ? content : {};
   const markdown = typeof c.markdown === "string" ? c.markdown : "";
-  const videoUrl = type === "video" && typeof c.url === "string" ? c.url : null;
+  const videoUrl = typeof c.url === "string" && c.url ? c.url : null;
   const questions =
     type === "quiz" && Array.isArray(c.questions)
       ? c.questions.filter(
