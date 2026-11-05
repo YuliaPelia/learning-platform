@@ -1,4 +1,5 @@
 import { prisma } from "@/db";
+import { mediaSrcOrNull } from "@/lib/media";
 import { FREE_LESSONS } from "@/lib/plans";
 
 /** Каталог курсів: відкритий для всіх, вхід не потрібен. */
@@ -17,7 +18,7 @@ export async function GET() {
         ageFrom: c.ageFrom,
         ageTo: c.ageTo,
         status: c.status,
-        coverUrl: c.coverUrl,
+        coverUrl: mediaSrcOrNull(c.coverUrl, { absolute: true }),
         lessonsCount: c._count.lessons,
         freeLessons: FREE_LESSONS,
       })),

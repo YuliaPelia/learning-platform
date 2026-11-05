@@ -8,6 +8,7 @@ import { IconCheck } from "@/components/icons";
 import { requireUser } from "@/lib/dal";
 import { parseLessonContent } from "@/lib/lesson-content";
 import { Markdown } from "@/lib/markdown";
+import { mediaSrc } from "@/lib/media";
 
 export const metadata: Metadata = { title: "Редагування уроку" };
 
@@ -62,7 +63,7 @@ export default async function AdminLessonPage({ params }: PageProps<"/admin/cour
         {content.videoUrl && (
           <div className="aspect-video overflow-hidden rounded-3xl bg-surface">
             {/\.(mp4|webm)(\?|$)/i.test(content.videoUrl) ? (
-              <video src={content.videoUrl} controls className="h-full w-full" />
+              <video src={mediaSrc(content.videoUrl)} controls className="h-full w-full" />
             ) : (
               <iframe src={content.videoUrl} title={lesson.title} className="h-full w-full" allowFullScreen />
             )}

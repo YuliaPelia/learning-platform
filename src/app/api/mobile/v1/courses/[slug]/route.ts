@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { mediaSrcOrNull } from "@/lib/media";
 import { FREE_LESSONS } from "@/lib/plans";
 import { getCourseState } from "@/lib/learning";
 import { apiError, getMobileUser } from "@/lib/mobile/http";
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/mobile/v
       ageFrom: course.ageFrom,
       ageTo: course.ageTo,
       status: course.status,
-      coverUrl: course.coverUrl,
+      coverUrl: mediaSrcOrNull(course.coverUrl, { absolute: true }),
       freeLessons: FREE_LESSONS,
       completedCount: student ? state.completedCount : null,
     },

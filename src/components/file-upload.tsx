@@ -2,7 +2,7 @@
 
 import { upload } from "@vercel/blob/client";
 import { useId, useRef, useState } from "react";
-import { UPLOAD_KINDS, type UploadKind } from "@/lib/uploads";
+import { UPLOAD_KINDS, coverPreviewSrc, isPrivateBlobUrl, type UploadKind } from "@/lib/uploads";
 
 /**
  * Завантаження файлу напряму у Vercel Blob з прогресом. Результат — посилання, яке
@@ -41,7 +41,8 @@ export function FileUpload({
     try {
       const safe = file.name.replace(/[^\w.-]+/g, "-").slice(-80);
       const blob = await upload(`${rule.folder}/${safe}`, file, {
-        access: "public",
+        // Сховище приватне: учні дивляться відео лише через /api/media з підписаним посиланням
+        access: "private",
         handleUploadUrl: "/api/upload",
         clientPayload: kind,
         multipart: file.size > 20 * 1024 * 1024,
@@ -60,9 +61,13 @@ export function FileUpload({
     <div className="flex flex-col gap-3">
       {value && kind === "cover" && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={value} alt="Обкладинка курсу" className="aspect-[16/9] w-full max-w-[420px] rounded-2xl object-cover" />
+        <img src={coverPreviewSrc(value)} alt="Обкладинка курсу" className="aspect-[16/9] w-full max-w-[420px] rounded-2xl object-cover" />
       )}
-      {value && kind === "video" && /\.(mp4|webm)(\?|$)/i.test(value) && (
+      {/* Приватне відео без підпису не програється — показуємо лише назву файлу */}
+      {value && kind === "video" && isPrivateBlobUrl(value) && (
+        <p className="text-sm font-semibold text-accent">Відео завантажено: {decodeURIComponent(new URL(value).pathname.split("/").pop() ?? "")}</p>
+      )}
+      {value && kind === "video" && !isPrivateBlobUrl(value) && /\.(mp4|webm)(\?|$)/i.test(value) && (
         <video src={value} controls preload="metadata" className="aspect-video w-full max-w-[420px] rounded-2xl bg-ink" />
       )}
       <div className="flex flex-wrap items-center gap-3">

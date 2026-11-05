@@ -6,6 +6,7 @@ import { Notice } from "@/components/cabinet-shell";
 import { PublicShell } from "@/components/site-chrome";
 import { getCurrentUser } from "@/lib/dal";
 import { getCourseState } from "@/lib/learning";
+import { mediaSrc } from "@/lib/media";
 import { FREE_LESSONS } from "@/lib/plans";
 
 export async function generateMetadata({ params }: PageProps<"/courses/[slug]">): Promise<Metadata> {
@@ -29,7 +30,7 @@ export default async function CoursePage({ params, searchParams }: PageProps<"/c
         {sp.finished && <Notice tone="success">Ти пройшов(-ла) всі уроки курсу! 🎉 Скоро тут з’являться нові модулі.</Notice>}
         {course.coverUrl && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={course.coverUrl} alt="" className="aspect-[16/9] max-h-[420px] w-full rounded-3xl object-cover" />
+          <img src={mediaSrc(course.coverUrl)} alt="" className="aspect-[16/9] max-h-[420px] w-full rounded-3xl object-cover" />
         )}
         <div className="flex flex-col gap-4">
           <span className="text-muted">

@@ -1,6 +1,7 @@
 import { prisma } from "@/db";
 import { getCourseState } from "@/lib/learning";
 import { parseLessonContent } from "@/lib/lesson-content";
+import { mediaSrc } from "@/lib/media";
 import { apiError, requireMobileUser } from "@/lib/mobile/http";
 
 /** Вбудовані плеєри (YouTube/Vimeo) у застосунку не програти — їх відкриваємо в браузері. */
@@ -44,7 +45,7 @@ export async function GET(request: Request, ctx: RouteContext<"/api/mobile/v1/co
       done,
       total: state.items.length,
       markdown: content.markdown,
-      video: content.videoUrl ? { url: content.videoUrl, kind: isFile(content.videoUrl) ? "file" : "embed" } : null,
+      video: content.videoUrl ? { url: mediaSrc(content.videoUrl, { absolute: true }), kind: isFile(content.videoUrl) ? "file" : "embed" } : null,
       questions: content.questions.map(({ q, options }) => ({ q, options })),
       homework: lesson.homework ? { task: lesson.homework.task, status: hw?.status ?? null } : null,
       next: next && next.access === "ok" ? next.lesson.order : null,
