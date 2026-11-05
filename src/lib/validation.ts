@@ -18,6 +18,21 @@ export const RegisterSchema = z.object({
 /** Код із листа під час реєстрації в застосунку. */
 export const EmailCodeSchema = z.string().regex(/^\d{6}$/, { error: "Введіть код із 6 цифр" });
 
+/** Крок 1 відновлення пароля: пошта, на яку надіслати код. */
+export const ForgotPasswordSchema = z.object({
+  email: z.email({ error: "Некоректний email" }).trim().toLowerCase(),
+});
+
+/** Крок 2: код із листа і новий пароль (двічі). */
+export const ResetPasswordSchema = z
+  .object({
+    email: z.email({ error: "Некоректний email" }).trim().toLowerCase(),
+    code: z.string().trim().regex(/^\d{6}$/, { error: "Введіть код із 6 цифр" }),
+    password,
+    passwordRepeat: z.string(),
+  })
+  .refine((v) => v.password === v.passwordRepeat, { error: "Паролі не збігаються", path: ["passwordRepeat"] });
+
 export const LoginSchema = z.object({
   login: z.string().trim().toLowerCase().min(2, { error: "Вкажіть email або логін" })
     .max(100, { error: "Логін занадто довгий" }),
@@ -195,3 +210,6 @@ export const LessonIdSchema = z.uuid();
 
 /** Ідентифікатор дитини з прихованого поля форми батька (колонка @db.Uuid: не-UUID дав би помилку Prisma P2023). */
 export const ChildIdSchema = z.uuid();
+
+/** Новий пароль дитини, який задають батьки в кабінеті. */
+export const ChildPasswordSchema = z.object({ childId: z.uuid(), password });

@@ -43,3 +43,10 @@ export function emailCodeLetter(code: string) {
     text: `Ваш код підтвердження: ${code}\n\nВін діє 15 хвилин. Якщо ви не створювали акаунт в ITCodeCraft, проігноруйте цей лист.`,
   };
 }
+
+export function passwordResetLetter(code: string) {
+  return {
+    subject: "Відновлення пароля ITCodeCraft",
+    text: `Код для зміни пароля: ${code}\n\nВін діє 15 хвилин. Якщо ви не просили змінити пароль, просто проігноруйте цей лист — ваш пароль лишиться тим самим.`,
+  };
+}

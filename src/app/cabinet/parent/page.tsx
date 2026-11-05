@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/db";
 import { AddChildForm } from "@/components/add-child-form";
-import { CancelSubscriptionForm, DeleteChildForm } from "@/components/parent-forms";
+import { CancelSubscriptionForm, ChildPasswordForm, DeleteChildForm } from "@/components/parent-forms";
 import { CabinetShell, Notice, StatusBadge } from "@/components/cabinet-shell";
 import { DeleteAccountForm } from "@/components/delete-account-form";
 import { isSubscriptionLive } from "@/lib/access";
@@ -85,6 +85,12 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
               <Stat label="Рівень" value={`${o.level.level} · ${o.level.title}`} />
               <Stat label="Серія днів" value={String(o.streak)} />
             </div>
+            <details className="card px-8 py-5">
+              <summary className="cursor-pointer text-[17px] font-bold marker:text-accent">Логін і пароль для входу</summary>
+              <div className="mt-4">
+                <ChildPasswordForm childId={kid.id} login={kid.login} />
+              </div>
+            </details>
             {o.lessonsCompleted === 0 && (
               <p className="text-muted">{kid.name} ще не пройшов(-ла) жодного уроку — прогрес з’явиться після першого уроку.</p>
             )}

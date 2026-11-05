@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useEffect, useRef } from "react";
 import { addChild } from "@/actions/children";
+import { PasswordInput } from "@/components/password-input";
 
 export function AddChildForm() {
   const [state, action, pending] = useActionState(addChild, undefined);
@@ -29,7 +30,7 @@ export function AddChildForm() {
       </div>
       <div>
         <label htmlFor="child-password" className="label">Пароль дитини</label>
-        <input id="child-password" name="password" type="password" className="field" required minLength={8} autoComplete="new-password" />
+        <PasswordInput id="child-password" name="password" required minLength={8} autoComplete="new-password" />
       </div>
       <div className="md:col-span-2">
         <label htmlFor="child-email" className="label">Email для входу через Google</label>

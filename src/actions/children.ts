@@ -5,9 +5,10 @@ import { prisma } from "@/db";
 import { deleteStudentProfile } from "@/lib/account";
 import { requireUser } from "@/lib/dal";
 import { hashPassword } from "@/lib/password";
+import { loginKey, resetFailures } from "@/lib/rate-limit";
 import { LEGAL_VERSION } from "@/lib/plans";
 import { requestMeta } from "@/lib/request";
-import { ChildIdSchema, ChildSchema, firstError, keepValues, type FormState } from "@/lib/validation";
+import { ChildIdSchema, ChildPasswordSchema, ChildSchema, firstError, keepValues, type FormState } from "@/lib/validation";
 
 export async function addChild(_prev: FormState, formData: FormData): Promise<FormState> {
   const parent = await requireUser("parent");
@@ -35,6 +36,27 @@ export async function addChild(_prev: FormState, formData: FormData): Promise<Fo
 
   revalidatePath("/cabinet/parent");
   return { ok: true, values: email ? { email } : undefined };
+}
+
+/**
+ * Батьки задають дитині новий пароль (старий не показати: у базі лише його хеш).
+ * Лише для своєї дитини. Дитину виходить з усіх пристроїв застосунку, блокування входу знімається.
+ */
+export async function changeChildPassword(_prev: FormState, formData: FormData): Promise<FormState> {
+  const parent = await requireUser("parent");
+  const parsed = ChildPasswordSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: firstError(parsed.error) };
+  const { childId, password } = parsed.data;
+  const child = await prisma.user.findFirst({ where: { id: childId, parentId: parent.id, deletedAt: null }, select: { id: true, login: true } });
+  if (!child) return { error: "Профіль дитини не знайдено" };
+
+  const now = new Date();
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: child.id }, data: { passwordHash: await hashPassword(password) } }),
+    prisma.refreshToken.updateMany({ where: { userId: child.id, revokedAt: null }, data: { revokedAt: now } }),
+  ]);
+  await resetFailures(loginKey(child.login));
+  return { ok: true };
 }
 
 /**

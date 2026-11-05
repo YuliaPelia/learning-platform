@@ -60,8 +60,12 @@ export default async function CoursePage({ params, searchParams }: PageProps<"/c
 
         {items.length > 0 && (
           <ol className="flex flex-col gap-3">
-            {items.map(({ lesson, done, access }) => (
-              <li key={lesson.id} className="card flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-4 sm:flex-nowrap sm:gap-5 sm:px-6 sm:py-5">
+            {items.map(({ lesson, done, access }) => {
+              // Учень відкриває урок кліком на картку — якщо урок йому доступний
+              const href = user?.role === "student" && access === "ok" ? `/learn/${course.slug}/${lesson.order}` : null;
+              const row = "flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-4 sm:flex-nowrap sm:gap-5 sm:px-6 sm:py-5";
+              const body = (
+                <>
                 <span
                   className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-mono font-bold ${
                     done ? "bg-accent text-white" : "bg-surface-2 text-soft"
@@ -78,8 +82,20 @@ export default async function CoursePage({ params, searchParams }: PageProps<"/c
                 ) : access === "needs_subscription" ? (
                   <IconLock className="ml-[3.75rem] shrink-0 text-faint sm:ml-0" />
                 ) : null}
-              </li>
-            ))}
+                </>
+              );
+              return (
+                <li key={lesson.id} className="card overflow-hidden p-0">
+                  {href ? (
+                    <Link href={href} className={`${row} transition-colors hover:bg-surface-2 focus-visible:bg-surface-2`}>
+                      {body}
+                    </Link>
+                  ) : (
+                    <div className={row}>{body}</div>
+                  )}
+                </li>
+              );
+            })}
           </ol>
         )}
       </div>
