@@ -1,178 +1,414 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { deleteSlot, deleteTask, toggleTask } from "@/actions/planner";
 import { CabinetShell, Notice, StatusBadge } from "@/components/cabinet-shell";
 import { DeleteAccountForm } from "@/components/delete-account-form";
-import { IconCheck, IconFlame, IconLock, IconPlay, IconStar } from "@/components/icons";
+import { IconCheck, IconFlame, IconLock, IconPlay, IconStar, IconX } from "@/components/icons";
+import { AddSlotForm, AddTaskForm, StudyProfileForm } from "@/components/planner-forms";
+import { Robot } from "@/components/robot";
 import { requireUser } from "@/lib/dal";
 import { formatShortDate, pluralDays } from "@/lib/format";
-import { getCourseState, getStudentOverview } from "@/lib/learning";
+import { getStudentOverview } from "@/lib/learning";
+import {
+  PRIORITIES,
+  SLOT_KINDS,
+  WEEKDAYS,
+  WEEKDAYS_FULL,
+  averageScore,
+  formatDuration,
+  formatTime,
+  greeting,
+  kyivDay,
+  kyivHour,
+  kyivWeekday,
+  loadLevel,
+  minutesByDay,
+  robotMessage,
+  taskStats,
+} from "@/lib/planner";
+import { getCourseProgress, getPlanner } from "@/lib/planner-data";
 
 export const metadata: Metadata = { title: "Мій кабінет" };
 
 const NAV = [
-  { href: "/cabinet/student", label: "Навчання" },
+  { href: "/cabinet/student", label: "Огляд" },
+  { href: "/cabinet/student#schedule", label: "Розклад" },
+  { href: "/cabinet/student#tasks", label: "Задачі" },
+  { href: "/cabinet/student#progress", label: "Прогрес" },
+  { href: "/cabinet/student#week", label: "Мій тиждень" },
   { href: "/cabinet/student#homework", label: "Домашки" },
-  { href: "/cabinet/student#badges", label: "Досягнення" },
   { href: "/cabinet/student#courses", label: "Усі курси" },
 ];
+
+/** Колір і підпис типу заняття — колір завжди йде разом із текстом. */
+const KIND_STYLE: Record<string, string> = {
+  lesson: "border-l-accent bg-accent/8",
+  homework: "border-l-pink bg-pink/8",
+  practice: "border-l-sky-500 bg-sky-500/8",
+  rest: "border-l-emerald-500 bg-emerald-500/8",
+  other: "border-l-faint bg-surface-2/70",
+};
+
+const PRIORITY_TONE = { high: "bad", normal: "muted", low: "muted" } as const;
 
 export default async function StudentCabinet({ searchParams }: PageProps<"/cabinet/student">) {
   const student = await requireUser("student");
   const sp = await searchParams;
   const o = await getStudentOverview(student.id);
-  const state = o.currentCourse ? await getCourseState(o.currentCourse.slug, student.id) : null;
-  const nextItem = state?.items.find((i) => !i.done) ?? null;
-  const published = o.allCourses.filter((c) => c.status === "published");
+  const [planner, courses] = await Promise.all([getPlanner(student.id), getCourseProgress(student.id, o.currentCourse?.id ?? null)]);
+  const { tasks, slots, profile } = planner;
+
   const now = new Date();
+  const today = kyivWeekday(now);
+  const todayKey = kyivDay(now);
+  const perDay = minutesByDay(slots);
+  const weekMinutes = perDay.reduce((s, m) => s + m, 0);
+  const ts = taskStats(tasks, now);
+  const avg = averageScore(o.homework.filter((h) => h.status === "reviewed"));
+  const pendingHw = o.homework.filter((h) => h.status === "pending");
+  const overdueHw = pendingHw.filter((h) => h.dueAt && h.dueAt < now).length;
+  const dueSoonHw = pendingHw.filter((h) => h.dueAt && h.dueAt >= now && h.dueAt.getTime() - now.getTime() < 2 * 24 * 60 * 60 * 1000).length;
+  const todaySlots = slots.filter((s) => s.weekday === today && s.kind !== "rest");
+
+  const tip = robotMessage({ todaySlots, overdueHomework: overdueHw, dueSoonHomework: dueSoonHw, openTasks: ts.open, streak: o.streak, hasSchedule: slots.length > 0 });
+
+  const continueCourse = courses.find((c) => c.id === o.currentCourse?.id) ?? courses[0] ?? null;
+  const maxActivity = Math.max(1, ...o.week.map((d) => d.count));
+  const published = o.allCourses.filter((c) => c.status === "published");
 
   return (
     <CabinetShell nav={NAV} user={student} roleLabel="Учень">
+      {/* Кольорові розмиті плями — на них «скло» панелей виглядає живим */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-32 right-[-10%] h-[520px] w-[520px] rounded-full bg-[#c4b5fd] opacity-50 blur-3xl" />
+        <div className="absolute top-[35%] left-[15%] h-[420px] w-[420px] rounded-full bg-[#f5d0fe] opacity-50 blur-3xl" />
+        <div className="absolute right-[20%] bottom-[-10%] h-[460px] w-[460px] rounded-full bg-[#bae6fd] opacity-50 blur-3xl" />
+      </div>
+
       {sp.asked && <Notice tone="success">Ми надіслали батькам лист із проханням відкрити курс 🙌</Notice>}
 
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div className="flex flex-col gap-1.5">
-          <h1 className="font-display text-3xl font-bold">Привіт, {student.name}!</h1>
-          <p className="text-[17px] text-muted">
-            {o.level.nextXp ? `До наступного рівня лишилось ${o.level.toNext} XP` : "Ти досяг максимального рівня!"}
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <div className="flex h-12 items-center gap-2 rounded-2xl bg-amber/15 px-4 font-bold text-amber">
-            <IconFlame /> {pluralDays(o.streak)} поспіль
-          </div>
-          <div className="flex h-12 items-center gap-2.5 rounded-2xl bg-surface-2 px-4 font-bold">
-            Рівень {o.level.level}
-            <div className="h-2 w-[90px] overflow-hidden rounded bg-line" role="progressbar" aria-valuenow={Math.round(o.level.progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="Прогрес до наступного рівня">
-              <div className="h-2 bg-accent" style={{ width: `${Math.round(o.level.progress * 100)}%` }} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-3">
-        {/* Продовжити навчання */}
-        <section className="card flex flex-col gap-5.5 p-8 xl:col-span-2">
-          {state && o.currentCourse ? (
-            <>
-              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-sm text-muted">Курс · {o.currentCourse.title}</span>
-                  <h2 className="font-display text-2xl font-bold">
-                    {nextItem ? `Урок ${nextItem.lesson.order} · ${nextItem.lesson.title}` : "Курс пройдено! 🎉"}
-                  </h2>
-                </div>
-                {nextItem && (
-                  <Link href={`/learn/${o.currentCourse.slug}/${nextItem.lesson.order}`} className="btn-primary h-[52px] shrink-0 px-6 text-[17px]">
-                    {state.completedCount ? "Продовжити" : "Почати"} <IconPlay />
-                  </Link>
-                )}
+      <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
+        {/* ── Привітання з роботом ── */}
+        <section className="glass relative overflow-hidden p-6 md:p-8" aria-labelledby="hello">
+          <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(40rem_20rem_at_85%_10%,rgb(193_85_232/0.18),transparent_60%),radial-gradient(30rem_20rem_at_10%_100%,rgb(109_74_255/0.14),transparent_60%)]" />
+          <div className="grid items-center gap-6 md:grid-cols-[1fr_200px]">
+            <div className="flex flex-col gap-4">
+              <h1 id="hello" className="font-display text-3xl font-bold md:text-[34px]">
+                {greeting(kyivHour(now))}, {student.name}! 👋
+              </h1>
+              <div className="relative max-w-[560px] rounded-2xl rounded-tl-md border border-white/80 bg-white/80 px-4.5 py-3.5 text-[15px] leading-relaxed text-soft shadow-sm">
+                <span className="mb-1 block text-xs font-bold tracking-wide text-accent uppercase">Робот Кодик</span>
+                {tip}
               </div>
-              <ol className="flex flex-wrap items-center gap-y-3" aria-label="Шлях уроків">
-                {state.items.map((it, idx) => {
-                  const current = it === nextItem;
-                  return (
-                    <li key={it.lesson.id} className="flex items-center">
-                      <span
-                        className={`flex h-11 w-11 items-center justify-center rounded-full font-mono font-bold ${
-                          it.done ? "bg-accent text-white" : current ? "border-2 border-accent text-accent" : "bg-surface-2 text-faint"
-                        }`}
-                        title={it.lesson.title}
-                      >
-                        {it.done ? <IconCheck size={18} /> : it.access === "needs_subscription" ? <IconLock size={16} /> : it.lesson.order}
-                        <span className="sr-only">
-                          {it.done ? "пройдено" : current ? "поточний" : it.access === "needs_subscription" ? "потрібна підписка" : "ще попереду"}
-                        </span>
-                      </span>
-                      {idx < state.items.length - 1 && <span className={`h-[3px] w-8 md:w-11 ${it.done ? "bg-accent" : "bg-line"}`} />}
-                    </li>
-                  );
-                })}
-              </ol>
-              <div className="flex flex-col justify-between gap-1 text-sm text-muted sm:flex-row">
-                <span>
-                  {state.completedCount} з {state.items.length} уроків пройдено
-                </span>
-                {!state.hasSubscription && <span>Перші 2 уроки — безкоштовно, далі потрібна підписка</span>}
-              </div>
-            </>
-          ) : (
-            <p className="text-soft">Обери курс нижче, щоб почати навчання.</p>
-          )}
-        </section>
-
-        {/* Бейджі */}
-        <section id="badges" className="card flex flex-col gap-4 p-7">
-          <h2 className="text-[19px] font-bold">Мої бейджі</h2>
-          {o.badgesEnabled ? (
-            <div className="grid grid-cols-2 gap-3">
-              {o.badges.map((b) => (
-                <div
-                  key={b.id}
-                  className={`flex flex-col gap-1.5 rounded-2xl p-3.5 ${b.earned ? "bg-amber/15" : "border border-dashed border-line-2 bg-surface-2"}`}
-                  title={b.description}
-                >
-                  {b.earned ? <IconStar size={24} className="text-amber" /> : <IconLock size={24} className="text-faint" />}
-                  <span className={`text-sm font-semibold ${b.earned ? "" : "text-faint"}`}>{b.title}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="leading-relaxed text-muted">
-              Бейджі, рівні та сертифікати відкриваються в тарифах <b className="text-text">Середній</b> і <b className="text-text">Преміум</b>. Попроси
-              батьків — а поки прогрес зберігається!
-            </p>
-          )}
-        </section>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-3">
-        {/* Домашки */}
-        <section id="homework" className="card flex flex-col gap-3.5 px-8 py-7 xl:col-span-2">
-          <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-center">
-            <h2 className="text-[19px] font-bold">Домашні завдання</h2>
-            <span className="text-sm text-muted">Нагадаємо батькам за день до дедлайну</span>
-          </div>
-          {o.homework.length === 0 && <p className="text-muted">Поки що домашок немає — вони з’являються після уроків.</p>}
-          {o.homework.map((h) => (
-            <Link
-              key={h.id}
-              href={`/learn/${h.courseSlug}/${h.lessonOrder}#homework`}
-              className="flex min-h-16 items-center justify-between gap-4 rounded-2xl bg-ink px-4.5 py-3 hover:bg-line"
-            >
-              <div className="flex flex-col gap-1">
-                <span className="font-semibold">
-                  {h.courseTitle} · урок {h.lessonOrder}: {h.lessonTitle}
-                </span>
-                <span className="text-sm text-muted">
-                  {h.status === "pending" ? `Дедлайн ${formatShortDate(h.dueAt)}` : h.teacherComment ? `Викладач: «${h.teacherComment}»` : "Здано"}
-                </span>
-                {h.teacherReplied && <span className="text-sm font-semibold text-accent">Викладач відповів на твоє запитання</span>}
-              </div>
-              {h.status === "pending" ? (
-                <StatusBadge tone={h.dueAt && h.dueAt < now ? "bad" : "wait"}>{h.dueAt && h.dueAt < now ? "Прострочено" : "Чекає"}</StatusBadge>
-              ) : h.status === "submitted" ? (
-                <StatusBadge tone="wait">На перевірці</StatusBadge>
-              ) : (
-                <StatusBadge tone="good">{h.score != null ? `Перевірено · ${h.score}/${h.maxScore}` : "Зараховано"}</StatusBadge>
+              {profile.goal && (
+                <p className="text-sm text-muted">
+                  🎯 Моя ціль: <span className="font-semibold text-text">{profile.goal}</span>
+                </p>
               )}
-            </Link>
-          ))}
+              <div className="flex flex-wrap gap-2.5">
+                {continueCourse?.next ? (
+                  <Link href={`/learn/${continueCourse.slug}/${continueCourse.next.order}`} className="btn-primary h-12 px-6">
+                    {continueCourse.done ? "Продовжити урок" : "Почати курс"} <IconPlay />
+                  </Link>
+                ) : (
+                  <Link href="#courses" className="btn-primary h-12 px-6">Обрати курс <IconPlay /></Link>
+                )}
+                <Link href="#schedule" className="btn-ghost h-12">Мій розклад</Link>
+              </div>
+            </div>
+            <Robot className="mx-auto hidden h-[220px] w-[200px] md:block" />
+          </div>
+
+          <dl className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <StatTile label="Рівень" value={`${o.level.level} · ${o.level.title}`} hint={o.level.nextXp ? `ще ${o.level.toNext} XP` : "максимум!"} progress={o.level.progress} />
+            <StatTile label="Уроків пройдено" value={String(o.lessonsCompleted)} hint={`${o.lessonsThisWeek} за тиждень`} />
+            <StatTile label="Серія" value={pluralDays(o.streak)} hint={o.streak ? "поспіль 🔥" : "почни сьогодні"} />
+            <StatTile label="Задач виконано" value={String(ts.doneThisWeek)} hint={ts.overdue ? `${ts.overdue} прострочено` : `за тиждень · ${ts.open} відкрито`} />
+          </dl>
         </section>
 
-        <section className="flex flex-col gap-3 rounded-3xl border border-line-2 bg-surface-2 p-7">
-          <span className="self-start rounded-full bg-amber/15 px-2.5 py-1 text-xs font-bold text-amber">НОВИНКИ</span>
-          <h2 className="text-[19px] font-bold">Скоро: курс Next.js</h2>
-          <p className="leading-relaxed text-muted">
-            Зроби власний сайт, як справжні розробники. Учні з тарифом Преміум отримають доступ першими.
-          </p>
+        {/* ── Права колонка: сьогодні + бейджі ── */}
+        <div className="flex flex-col gap-6">
+          <section className="glass flex flex-col gap-3.5 p-6" aria-labelledby="today">
+            <div className="flex items-center justify-between">
+              <h2 id="today" className="text-lg font-bold">Сьогодні · {WEEKDAYS_FULL[today]}</h2>
+              <span className="flex items-center gap-1.5 rounded-full bg-amber/15 px-3 py-1 text-sm font-bold text-amber">
+                <IconFlame size={16} /> {o.streak}
+              </span>
+            </div>
+            {todaySlots.length ? (
+              <ul className="flex flex-col gap-2">
+                {todaySlots.map((s) => (
+                  <li key={s.id} className={`rounded-xl border-l-4 px-3.5 py-2.5 ${KIND_STYLE[s.kind]}`}>
+                    <span className="block font-mono text-xs text-muted">
+                      {formatTime(s.startMinute)}–{formatTime(s.startMinute + s.durationMinutes)} · {SLOT_KINDS[s.kind]}
+                    </span>
+                    <span className="font-semibold">{s.title}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted">На сьогодні занять немає. Додай їх у розклад нижче.</p>
+            )}
+            {pendingHw.length > 0 && (
+              <Link href="#homework" className="rounded-xl bg-pink/10 px-3.5 py-2.5 text-sm font-semibold text-pink hover:bg-pink/15">
+                Домашок чекає: {pendingHw.length}
+                {overdueHw ? ` · прострочено ${overdueHw}` : ""} →
+              </Link>
+            )}
+          </section>
+
+          <section id="badges" className="glass flex flex-col gap-3.5 p-6" aria-labelledby="badges-h">
+            <h2 id="badges-h" className="text-lg font-bold">Мої бейджі</h2>
+            {o.badgesEnabled ? (
+              <div className="grid grid-cols-3 gap-2">
+                {o.badges.map((b) => (
+                  <div
+                    key={b.id}
+                    className={`flex flex-col items-center gap-1 rounded-2xl p-2.5 text-center ${b.earned ? "bg-amber/15" : "border border-dashed border-line-2 bg-white/50"}`}
+                    title={b.description}
+                  >
+                    {b.earned ? <IconStar size={22} className="text-amber" /> : <IconLock size={20} className="text-faint" />}
+                    <span className={`text-xs font-semibold ${b.earned ? "" : "text-faint"}`}>{b.title}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm leading-relaxed text-muted">
+                Бейджі відкриваються в тарифах <b className="text-text">Середній</b> і <b className="text-text">Преміум</b>. Прогрес зберігається!
+              </p>
+            )}
+          </section>
+        </div>
+      </div>
+
+      {/* ── Розклад на тиждень ── */}
+      <section id="schedule" className="glass flex scroll-mt-6 flex-col gap-5 p-6 md:p-7" aria-labelledby="schedule-h">
+        <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+          <div>
+            <h2 id="schedule-h" className="text-xl font-bold">Розклад на тиждень</h2>
+            <p className="text-sm text-muted">
+              Заплановано {formatDuration(weekMinutes)} навчання · мета {profile.minutesPerDay} хв на день
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
+            {Object.entries(SLOT_KINDS).map(([k, l]) => (
+              <span key={k} className="flex items-center gap-1.5">
+                <span className={`h-3 w-1.5 rounded-sm border-l-4 ${KIND_STYLE[k]}`} aria-hidden /> {l}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
+          {WEEKDAYS.map((d, day) => {
+            const daySlots = slots.filter((s) => s.weekday === day);
+            const level = loadLevel(perDay[day], profile.minutesPerDay);
+            const isStudyDay = profile.studyDays.includes(day);
+            return (
+              <li key={d} className={`flex min-h-[150px] flex-col gap-2 rounded-2xl border p-3 ${day === today ? "border-accent/60 bg-white/80 ring-2 ring-accent/15" : "border-white/80 bg-white/45"}`}>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="font-bold">
+                    {WEEKDAYS_FULL[day]}
+                    {day === today && <span className="ml-1.5 text-xs font-semibold text-accent">сьогодні</span>}
+                  </span>
+                  <span
+                    className={`text-xs font-semibold ${level === "over" ? "text-danger" : level === "ok" ? "text-good" : "text-faint"}`}
+                    title={level === "over" ? "Більше, ніж ти планував(-ла) на день" : undefined}
+                  >
+                    {perDay[day] ? `${perDay[day]} хв` : isStudyDay ? "вільно" : "вихідний"}
+                    {level === "over" && " ⚠"}
+                  </span>
+                </div>
+                {daySlots.length === 0 && <span className="text-xs text-faint">—</span>}
+                {daySlots.map((s) => (
+                  <div key={s.id} className={`group relative rounded-xl border-l-4 py-2 pr-7 pl-2.5 ${KIND_STYLE[s.kind]}`}>
+                    <span className="block font-mono text-[11px] text-muted">
+                      {formatTime(s.startMinute)}–{formatTime(s.startMinute + s.durationMinutes)}
+                    </span>
+                    <span className="block text-sm leading-snug font-semibold">{s.title}</span>
+                    <span className="text-[11px] text-muted">
+                      {SLOT_KINDS[s.kind]}
+                    </span>
+                    <form action={deleteSlot} className="absolute top-1.5 right-1.5">
+                      <input type="hidden" name="slotId" value={s.id} />
+                      <button className="flex h-6 w-6 items-center justify-center rounded-full text-faint hover:bg-white hover:text-danger focus-visible:text-danger" aria-label={`Видалити «${s.title}» (${WEEKDAYS_FULL[day]})`}>
+                        <IconX size={14} />
+                      </button>
+                    </form>
+                  </div>
+                ))}
+              </li>
+            );
+          })}
+        </ol>
+
+        <details className="rounded-2xl border border-white/80 bg-white/55 p-4" open={slots.length === 0}>
+          <summary className="cursor-pointer font-semibold text-accent">+ Додати заняття</summary>
+          <div className="mt-4">
+            <AddSlotForm defaultDay={today} />
+          </div>
+        </details>
+      </section>
+
+      <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+        {/* ── Задачі ── */}
+        <section id="tasks" className="glass flex scroll-mt-6 flex-col gap-4 p-6 md:p-7" aria-labelledby="tasks-h">
+          <div className="flex items-baseline justify-between">
+            <h2 id="tasks-h" className="text-xl font-bold">Мої задачі</h2>
+            <span className="text-sm text-muted">
+              {ts.open} відкрито{ts.overdue ? ` · ${ts.overdue} прострочено` : ""}
+            </span>
+          </div>
+          <AddTaskForm />
+          {tasks.length === 0 ? (
+            <p className="text-sm text-muted">Задач поки немає. Запиши першу — маленьку й конкретну.</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {tasks.map((t) => {
+                const due = t.dueDate ? t.dueDate.toISOString().slice(0, 10) : null;
+                const overdue = !t.done && due && due < todayKey;
+                return (
+                  <li key={t.id} className={`flex items-center gap-3 rounded-xl border border-white/80 px-3 py-2.5 ${t.done ? "bg-white/35" : "bg-white/70"}`}>
+                    <form action={toggleTask}>
+                      <input type="hidden" name="taskId" value={t.id} />
+                      <button
+                        className={`flex h-7 w-7 items-center justify-center rounded-lg border-2 transition ${t.done ? "border-accent bg-accent text-white" : "border-line-2 bg-white hover:border-accent"}`}
+                        aria-label={t.done ? `Повернути «${t.title}» у роботу` : `Позначити «${t.title}» виконаною`}
+                        aria-pressed={t.done}
+                      >
+                        {t.done && <IconCheck size={14} />}
+                      </button>
+                    </form>
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <span className={`truncate font-medium ${t.done ? "text-faint line-through" : ""}`}>{t.title}</span>
+                      <span className="text-xs text-muted">
+                        {due ? (overdue ? <b className="text-danger">прострочено · {formatShortDate(t.dueDate)}</b> : `до ${formatShortDate(t.dueDate)}`) : "без дедлайну"}
+                        {t.estMinutes ? ` · ${formatDuration(t.estMinutes)}` : ""}
+                      </span>
+                    </div>
+                    {!t.done && t.priority !== "normal" && <StatusBadge tone={PRIORITY_TONE[t.priority]}>{PRIORITIES[t.priority]}</StatusBadge>}
+                    <form action={deleteTask}>
+                      <input type="hidden" name="taskId" value={t.id} />
+                      <button className="flex h-7 w-7 items-center justify-center rounded-full text-faint hover:bg-white hover:text-danger focus-visible:text-danger" aria-label={`Видалити задачу «${t.title}»`}>
+                        <IconX size={14} />
+                      </button>
+                    </form>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        {/* ── Мій тиждень: навантаження й ціль ── */}
+        <section id="week" className="glass relative flex scroll-mt-6 flex-col gap-5 overflow-hidden p-6 md:p-7" aria-labelledby="week-h">
+          <div aria-hidden className="absolute -top-16 -right-16 -z-10 h-48 w-48 rounded-full bg-[#c4b5fd] opacity-40 blur-2xl" />
+          <div className="flex items-center gap-3">
+            <Robot className="h-16 w-14 shrink-0" />
+            <div>
+              <h2 id="week-h" className="text-xl font-bold">Мій тиждень</h2>
+              <p className="text-sm text-muted">Скажи, скільки часу маєш, — і я підсвічу дні, де навантаження забагато.</p>
+            </div>
+          </div>
+          <StudyProfileForm profile={profile} />
         </section>
       </div>
 
-      <section id="courses" className="flex flex-col gap-4">
+      {/* ── Прогрес і успішність ── */}
+      <section id="progress" className="glass grid scroll-mt-6 gap-8 p-6 md:p-7 lg:grid-cols-[1.1fr_1fr]" aria-labelledby="progress-h">
+        <div className="flex flex-col gap-4">
+          <div>
+            <h2 id="progress-h" className="text-xl font-bold">Активність за 7 днів</h2>
+            <p className="text-sm text-muted">Пройдені уроки й здані домашки щодня</p>
+          </div>
+          <div className="flex h-44 items-end gap-2 border-b border-line-2/70 pb-px" role="img" aria-label={`Активність за 7 днів: ${o.week.map((d) => `${d.day.slice(5)} — ${d.count}`).join(", ")}`}>
+            {o.week.map((d) => {
+              const isToday = d.day === todayKey;
+              return (
+                <div key={d.day} className="group relative flex h-full flex-1 flex-col items-center justify-end">
+                  <span className="pointer-events-none absolute -top-1 z-10 -translate-y-full rounded-lg bg-text px-2 py-1 text-xs whitespace-nowrap text-white opacity-0 transition group-hover:opacity-100">
+                    {formatShortDate(new Date(`${d.day}T12:00:00Z`))}: {d.count}
+                  </span>
+                  <div
+                    className={`w-full max-w-9 rounded-t ${d.count ? (isToday ? "bg-accent" : "bg-accent/55") : "bg-line"}`}
+                    style={{ height: d.count ? `${Math.max(8, (d.count / maxActivity) * 100)}%` : "4px" }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex gap-2 text-center text-xs text-muted" aria-hidden>
+            {o.week.map((d) => (
+              <span key={d.day} className={`flex-1 ${d.day === todayKey ? "font-bold text-accent" : ""}`}>
+                {WEEKDAYS[(new Date(`${d.day}T12:00:00Z`).getUTCDay() + 6) % 7]}
+              </span>
+            ))}
+          </div>
+          <dl className="grid grid-cols-3 gap-3">
+            <MiniStat label="Середня оцінка" value={avg == null ? "—" : `${avg}%`} />
+            <MiniStat label="Домашок здано" value={`${o.homework.length - pendingHw.length} з ${o.homework.length}`} />
+            <MiniStat label="XP загалом" value={String(o.xp)} />
+          </dl>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <h3 className="text-lg font-bold">Прогрес курсів</h3>
+          {courses.length === 0 && <p className="text-sm text-muted">Почни будь-який курс — тут з’явиться твій прогрес.</p>}
+          {courses.map((c) => {
+            const pct = c.total ? Math.round((c.done / c.total) * 100) : 0;
+            return (
+              <Link key={c.id} href={c.next ? `/learn/${c.slug}/${c.next.order}` : `/courses/${c.slug}`} className="flex flex-col gap-2 rounded-2xl border border-white/80 bg-white/60 p-4 hover:bg-white/85">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="font-semibold">{c.title}</span>
+                  <span className="text-sm font-bold text-accent">{pct}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`Прогрес курсу ${c.title}`}>
+                  <div className="h-full rounded-full bg-[linear-gradient(90deg,#6d4aff,#c155e8)]" style={{ width: `${pct}%` }} />
+                </div>
+                <span className="text-xs text-muted">
+                  {c.done} з {c.total} уроків{c.next ? ` · далі: ${c.next.title}` : " · курс пройдено 🎉"}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Домашки ── */}
+      <section id="homework" className="glass flex scroll-mt-6 flex-col gap-3.5 p-6 md:p-7" aria-labelledby="homework-h">
+        <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-center">
+          <h2 id="homework-h" className="text-xl font-bold">Домашні завдання</h2>
+          <span className="text-sm text-muted">Нагадаємо батькам за день до дедлайну</span>
+        </div>
+        {o.homework.length === 0 && <p className="text-muted">Поки що домашок немає — вони з’являються після уроків.</p>}
+        {o.homework.map((h) => (
+          <Link key={h.id} href={`/learn/${h.courseSlug}/${h.lessonOrder}#homework`} className="flex min-h-16 items-center justify-between gap-4 rounded-2xl border border-white/80 bg-white/60 px-4.5 py-3 hover:bg-white/85">
+            <div className="flex flex-col gap-1">
+              <span className="font-semibold">
+                {h.courseTitle} · урок {h.lessonOrder}: {h.lessonTitle}
+              </span>
+              <span className="text-sm text-muted">
+                {h.status === "pending" ? `Дедлайн ${formatShortDate(h.dueAt)}` : h.teacherComment ? `Викладач: «${h.teacherComment}»` : "Здано"}
+              </span>
+              {h.teacherReplied && <span className="text-sm font-semibold text-accent">Викладач відповів на твоє запитання</span>}
+            </div>
+            {h.status === "pending" ? (
+              <StatusBadge tone={h.dueAt && h.dueAt < now ? "bad" : "wait"}>{h.dueAt && h.dueAt < now ? "Прострочено" : "Чекає"}</StatusBadge>
+            ) : h.status === "submitted" ? (
+              <StatusBadge tone="wait">На перевірці</StatusBadge>
+            ) : (
+              <StatusBadge tone="good">{h.score != null ? `Перевірено · ${h.score}/${h.maxScore}` : "Зараховано"}</StatusBadge>
+            )}
+          </Link>
+        ))}
+      </section>
+
+      <section id="courses" className="flex scroll-mt-6 flex-col gap-4">
         <h2 className="font-display text-2xl font-bold">Усі курси</h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {published.map((c) => (
-            <Link key={c.id} href={`/courses/${c.slug}`} className="card flex flex-col gap-2 p-6 hover:border-accent">
+            <Link key={c.id} href={`/courses/${c.slug}`} className="glass flex flex-col gap-2 p-6 hover:border-accent">
               <span className="text-lg font-bold">{c.title}</span>
               <span className="text-sm text-muted">{c.description}</span>
             </Link>
@@ -181,7 +417,7 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
             .filter((c) => c.status === "soon")
             .slice(0, 4)
             .map((c) => (
-              <div key={c.id} className="flex flex-col gap-2 rounded-3xl border border-dashed border-line-2 p-6 text-muted">
+              <div key={c.id} className="flex flex-col gap-2 rounded-3xl border border-dashed border-line-2 bg-white/30 p-6 text-muted">
                 <span className="text-lg font-bold">{c.title}</span>
                 <span className="text-sm text-amber">Скоро</span>
               </div>
@@ -193,9 +429,33 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
         {student.parentId ? (
           <p className="text-sm text-muted">Твій профіль створили батьки — видалити його можуть вони у своєму кабінеті.</p>
         ) : (
-          <DeleteAccountForm consequences="Буде видалено твій профіль, прогрес, домашки й листування з викладачем. Відновити їх не вийде." />
+          <DeleteAccountForm consequences="Буде видалено твій профіль, прогрес, домашки, задачі, розклад і листування з викладачем. Відновити їх не вийде." />
         )}
       </section>
     </CabinetShell>
+  );
+}
+
+function StatTile({ label, value, hint, progress }: { label: string; value: string; hint: string; progress?: number }) {
+  return (
+    <div className="flex flex-col gap-1 rounded-2xl border border-white/80 bg-white/65 p-4">
+      <dt className="text-xs font-semibold text-muted">{label}</dt>
+      <dd className="font-display text-xl font-bold">{value}</dd>
+      {progress != null && (
+        <div className="h-1.5 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="До наступного рівня">
+          <div className="h-full rounded-full bg-accent" style={{ width: `${Math.round(progress * 100)}%` }} />
+        </div>
+      )}
+      <dd className="text-xs text-muted">{hint}</dd>
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/80 bg-white/60 p-3">
+      <dt className="text-xs text-muted">{label}</dt>
+      <dd className="font-display text-lg font-bold">{value}</dd>
+    </div>
   );
 }

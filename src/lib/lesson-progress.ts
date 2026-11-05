@@ -14,15 +14,18 @@ export async function loadAccessibleLesson(studentId: string, lessonId: string) 
   if (!lesson) return null;
   const { course } = lesson;
 
+  // Попередній — найближчий урок з меншим номером (навіть якщо адмін видалив урок і в нумерації є пропуск)
   let prevDone = true;
-  if (lesson.order > 1) {
-    const prev = await prisma.lesson.findUnique({
-      where: { courseId_order: { courseId: course.id, order: lesson.order - 1 } },
-      select: { id: true },
-    });
-    prevDone = prev
-      ? !!(await prisma.progress.findFirst({ where: { userId: studentId, lessonId: prev.id, completed: true } }))
-      : true;
+  let prevHomeworkPending = false;
+  const prev = await prisma.lesson.findFirst({
+    where: { courseId: course.id, order: { lt: lesson.order } },
+    orderBy: { order: "desc" },
+    select: { id: true, homework: { select: { id: true } } },
+  });
+  if (prev) {
+    prevDone = !!(await prisma.progress.findFirst({ where: { userId: studentId, lessonId: prev.id, completed: true } }));
+    prevHomeworkPending =
+      !!prev.homework && !!(await prisma.submission.findFirst({ where: { homeworkId: prev.homework.id, userId: studentId, status: "pending" }, select: { id: true } }));
   }
   const subs = await getStudentSubscriptions(studentId);
   const access = canAccessLesson({
@@ -31,6 +34,7 @@ export async function loadAccessibleLesson(studentId: string, lessonId: string) 
     minPlan: course.minPlan.code,
     lessonOrder: lesson.order,
     previousLessonCompleted: prevDone,
+    previousHomeworkPending: prevHomeworkPending,
     subscriptions: subs,
   });
   return access === "ok" ? { lesson, course, subs } : null;

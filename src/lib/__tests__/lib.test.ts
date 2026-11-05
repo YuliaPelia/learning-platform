@@ -38,6 +38,13 @@ describe("доступ до уроків", () => {
     expect(canAccessLesson({ ...base, lessonOrder: 2, previousLessonCompleted: false })).toBe("locked_sequence");
   });
 
+  it("наступний урок закритий, поки не здано домашку попереднього", () => {
+    expect(canAccessLesson({ ...base, lessonOrder: 2, previousHomeworkPending: true })).toBe("locked_homework");
+    expect(canAccessLesson({ ...base, lessonOrder: 2, previousHomeworkPending: false })).toBe("ok");
+    // спершу — сам урок, потім — домашка
+    expect(canAccessLesson({ ...base, lessonOrder: 2, previousLessonCompleted: false, previousHomeworkPending: true })).toBe("locked_sequence");
+  });
+
   it("курс «скоро» закритий", () => {
     expect(canAccessLesson({ ...base, courseStatus: "soon", lessonOrder: 1 })).toBe("coming_soon");
   });

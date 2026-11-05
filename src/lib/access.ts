@@ -11,7 +11,7 @@ export type SubscriptionLike = {
   currentPeriodEnd: Date | null;
 };
 
-export type AccessReason = "ok" | "coming_soon" | "locked_sequence" | "needs_subscription";
+export type AccessReason = "ok" | "coming_soon" | "locked_sequence" | "locked_homework" | "needs_subscription";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -56,13 +56,17 @@ export function canAccessLesson(params: {
   minPlan?: PlanId;
   lessonOrder: number;
   previousLessonCompleted: boolean;
+  /** Домашку попереднього уроку видано, але ще не здано. */
+  previousHomeworkPending?: boolean;
   subscriptions: SubscriptionLike[];
   now?: Date;
 }): AccessReason {
-  const { courseStatus, courseId, minPlan = "basic", lessonOrder, previousLessonCompleted, subscriptions, now } = params;
+  const { courseStatus, courseId, minPlan = "basic", lessonOrder, previousLessonCompleted, previousHomeworkPending = false, subscriptions, now } = params;
   if (courseStatus !== "published") return "coming_soon";
   // Крок за кроком: наступний урок відкривається лише після попереднього.
   if (lessonOrder > 1 && !previousLessonCompleted) return "locked_sequence";
+  // …і лише після того, як здано домашку попереднього уроку (перевірки викладача не чекаємо)
+  if (lessonOrder > 1 && previousHomeworkPending) return "locked_homework";
   if (lessonOrder <= FREE_LESSONS) return "ok";
   return findCoveringSubscription(subscriptions, courseId, now, minPlan) ? "ok" : "needs_subscription";
 }

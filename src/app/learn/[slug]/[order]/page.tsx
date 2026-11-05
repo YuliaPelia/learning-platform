@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/cabinet-shell";
 import { IconArrow, IconCheck, IconLock } from "@/components/icons";
 import { MessageThread } from "@/components/message-thread";
 import { Logo } from "@/components/site-chrome";
+import { CompleteLessonButton, GatedVideo, WatchGateProvider } from "@/components/watch-gate";
 import { requireUser } from "@/lib/dal";
 import { formatShortDate } from "@/lib/format";
 import { getCourseState } from "@/lib/learning";
@@ -38,6 +39,10 @@ export default async function LessonPage({ params, searchParams }: PageProps<"/l
   const content = parseLessonContent(lesson.type, lesson.content);
   // ?quiz=2-3 — результат невдалої спроби тесту (правильних-усього)
   const quizResult = typeof sp.quiz === "string" ? sp.quiz.split("-").map(Number) : null;
+  // Власне відео (mp4/webm) можна відстежити — тоді «Урок пройдено» лише після перегляду.
+  // YouTube/Vimeo у вбудованому плеєрі не відстежити, тож для них обмеження немає.
+  const isFileVideo = !!content.videoUrl && /\.(mp4|webm)(\?|$)/i.test(content.videoUrl);
+  const nextItem = state.items[idx + 1];
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -89,11 +94,11 @@ export default async function LessonPage({ params, searchParams }: PageProps<"/l
           </div>
 
           {access === "ok" ? (
-            <>
+            <WatchGateProvider required={isFileVideo && !done}>
               {content.videoUrl && (
                 <div className="aspect-video overflow-hidden rounded-3xl bg-surface">
-                  {/\.(mp4|webm)(\?|$)/i.test(content.videoUrl) ? (
-                    <video src={mediaSrc(content.videoUrl)} controls controlsList="nodownload" playsInline preload="metadata" poster={mediaSrcOrNull(state.course.coverUrl) ?? undefined} className="h-full w-full" />
+                  {isFileVideo ? (
+                    <GatedVideo src={mediaSrc(content.videoUrl)} poster={mediaSrcOrNull(state.course.coverUrl) ?? undefined} />
                   ) : (
                     <iframe src={content.videoUrl} title={lesson.title} className="h-full w-full" allowFullScreen />
                   )}
@@ -179,20 +184,26 @@ export default async function LessonPage({ params, searchParams }: PageProps<"/l
                     <span className="flex items-center gap-2 font-semibold text-accent">
                       <IconCheck /> Урок пройдено
                     </span>
-                    {state.items[idx + 1] && (
-                      <Link href={`/learn/${slug}/${state.items[idx + 1].lesson.order}`} className="btn-primary">
-                        Наступний урок <IconArrow />
+                    {nextItem?.access === "locked_homework" ? (
+                      <Link href="#homework" className="font-semibold text-pink hover:underline">
+                        Здай домашку — і відкриється наступний урок
                       </Link>
+                    ) : (
+                      nextItem && (
+                        <Link href={`/learn/${slug}/${nextItem.lesson.order}`} className="btn-primary">
+                          Наступний урок <IconArrow />
+                        </Link>
+                      )
                     )}
                   </>
                 ) : (
-                  <button className="btn-primary h-14 px-7 text-lg">
+                  <CompleteLessonButton>
                     Урок пройдено — далі <IconArrow />
-                  </button>
+                  </CompleteLessonButton>
                 )}
               </form>
               )}
-            </>
+            </WatchGateProvider>
           ) : (
             <div className="card flex flex-col items-start gap-4 p-8">
               <IconLock size={32} className="text-amber" />
@@ -200,7 +211,14 @@ export default async function LessonPage({ params, searchParams }: PageProps<"/l
                 <>
                   <h2 className="text-2xl font-bold">Спочатку пройди попередній урок</h2>
                   <p className="text-soft">Уроки відкриваються крок за кроком — так знання складаються в систему.</p>
-                  <Link href={`/learn/${slug}/${lesson.order - 1}`} className="btn-primary">До уроку {lesson.order - 1}</Link>
+                  <Link href={`/learn/${slug}/${state.items[idx - 1]?.lesson.order ?? 1}`} className="btn-primary">До уроку {state.items[idx - 1]?.lesson.order ?? 1}</Link>
+                </>
+              )}
+              {access === "locked_homework" && state.items[idx - 1] && (
+                <>
+                  <h2 className="text-2xl font-bold">Спочатку здай домашку попереднього уроку</h2>
+                  <p className="text-soft">Щойно домашку буде здано, цей урок відкриється. Чекати перевірки викладача не потрібно.</p>
+                  <Link href={`/learn/${slug}/${state.items[idx - 1].lesson.order}#homework`} className="btn-primary">До домашки</Link>
                 </>
               )}
               {access === "coming_soon" && <h2 className="text-2xl font-bold">Курс ще готується — скоро відкриємо!</h2>}

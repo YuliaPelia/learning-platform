@@ -213,3 +213,43 @@ export const ChildIdSchema = z.uuid();
 
 /** Новий пароль дитини, який задають батьки в кабінеті. */
 export const ChildPasswordSchema = z.object({ childId: z.uuid(), password });
+
+// ───────────── Планувальник учня ─────────────
+
+const optionalDate = z
+  .union([z.literal(""), z.iso.date({ error: "Некоректна дата" })])
+  .optional()
+  .transform((v) => (v ? new Date(`${v}T00:00:00Z`) : null));
+
+export const StudyTaskSchema = z.object({
+  title: z.string().trim().min(2, { error: "Опиши задачу хоча б двома символами" }).max(120, { error: "Задача занадто довга" }),
+  dueDate: optionalDate,
+  priority: z.enum(["low", "normal", "high"]).default("normal"),
+  estMinutes: z
+    .union([z.literal(""), z.coerce.number().int().min(5, { error: "Щонайменше 5 хвилин" }).max(600, { error: "Не більше 10 годин" })])
+    .optional()
+    .transform((v) => (v === "" || v === undefined ? null : v)),
+});
+
+export const ScheduleSlotSchema = z
+  .object({
+    weekday: z.coerce.number().int().min(0).max(6),
+    start: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, { error: "Вкажи час початку" }),
+    durationMinutes: z.coerce.number({ error: "Вкажи тривалість" }).int().min(10, { error: "Щонайменше 10 хвилин" }).max(300, { error: "Не більше 5 годин" }),
+    title: z.string().trim().min(2, { error: "Назви заняття" }).max(80),
+    kind: z.enum(["lesson", "homework", "practice", "rest", "other"]),
+  })
+  .transform((v) => {
+    const [h, m] = v.start.split(":").map(Number);
+    return { weekday: v.weekday, startMinute: h * 60 + m, durationMinutes: v.durationMinutes, title: v.title, kind: v.kind };
+  })
+  .refine((v) => v.startMinute + v.durationMinutes <= 24 * 60, { error: "Заняття має закінчитися до півночі" });
+
+export const StudyProfileSchema = z.object({
+  minutesPerDay: z.coerce.number({ error: "Вкажи, скільки хвилин на день" }).int().min(15, { error: "Щонайменше 15 хвилин" }).max(240, { error: "Не більше 4 годин на день" }),
+  studyDays: z.array(z.coerce.number().int().min(0).max(6)).min(1, { error: "Обери хоча б один день" }).max(7),
+  busyNote: z.string().trim().max(300, { error: "Опис занадто довгий (до 300 символів)" }),
+  goal: z.string().trim().max(200, { error: "Ціль занадто довга (до 200 символів)" }),
+});
+
+export const PlannerIdSchema = z.uuid();

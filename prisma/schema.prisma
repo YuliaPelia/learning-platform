@@ -83,16 +83,16 @@ enum SubmissionStatus {
 // ───────────── 1. users ─────────────
 
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  email        String?  @unique // у дитини email може не бути — входить за login
-  login        String   @unique
-  passwordHash String?  @map("password_hash") // порожньо в акаунтів, що входять лише через Google
-  googleSub    String?  @unique @map("google_sub")
-  appleSub     String?  @unique @map("apple_sub")
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String?   @unique // у дитини email може не бути — входить за login
+  login        String    @unique
+  passwordHash String?   @map("password_hash") // порожньо в акаунтів, що входять лише через Google
+  googleSub    String?   @unique @map("google_sub")
+  appleSub     String?   @unique @map("apple_sub")
   role         Role
   name         String
-  birthYear    Int?     @map("birth_year") // зберігаємо рік, а не вік: вік змінюється щороку
-  createdAt    DateTime @default(now()) @map("created_at")
+  birthYear    Int?      @map("birth_year") // зберігаємо рік, а не вік: вік змінюється щороку
+  createdAt    DateTime  @default(now()) @map("created_at")
   // Акаунт видалено на вимогу користувача: персональні дані стерто, рядок лишився для платежів і згод
   deletedAt    DateTime? @map("deleted_at")
 
@@ -109,6 +109,9 @@ model User {
   childConsents        Consent[]      @relation("ConsentChild")
   messages             Message[]
   refreshTokens        RefreshToken[]
+  studyTasks           StudyTask[]
+  scheduleSlots        ScheduleSlot[]
+  studyProfile         StudyProfile?
 
   @@index([parentId])
   @@map("users")
@@ -388,4 +391,70 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+// ───────────── Планувальник учня: задачі, розклад на тиждень, навантаження ─────────────
+// Учень веде їх сам; батьки бачать лише для перегляду.
+
+enum TaskPriority {
+  low
+  normal
+  high
+}
+
+/**
+ * Тип заняття в розкладі — від нього залежить колір картки.
+ */
+enum SlotKind {
+  lesson // урок курсу
+  homework // домашка
+  practice // самостійна практика / проєкт
+  rest // відпочинок, перерва
+  other
+}
+
+model StudyTask {
+  id         String       @id @default(uuid()) @db.Uuid
+  studentId  String       @map("student_id") @db.Uuid
+  student    User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title      String
+  dueDate    DateTime?    @map("due_date") @db.Date
+  priority   TaskPriority @default(normal)
+  estMinutes Int?         @map("est_minutes")
+  done       Boolean      @default(false)
+  doneAt     DateTime?    @map("done_at")
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  @@index([studentId, done])
+  @@map("study_tasks")
+}
+
+model ScheduleSlot {
+  id              String   @id @default(uuid()) @db.Uuid
+  studentId       String   @map("student_id") @db.Uuid
+  student         User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  weekday         Int // 0 — понеділок … 6 — неділя
+  startMinute     Int      @map("start_minute") // хвилина від початку доби: 17:30 → 1050
+  durationMinutes Int      @map("duration_minutes")
+  title           String
+  kind            SlotKind @default(other)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([studentId, weekday])
+  @@map("schedule_slots")
+}
+
+/**
+ * Навантаження учня: скільки хвилин на день і в які дні — від цього залежить «⚠ забагато» в розкладі.
+ */
+model StudyProfile {
+  studentId     String   @id @map("student_id") @db.Uuid
+  student       User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  minutesPerDay Int      @default(45) @map("minutes_per_day")
+  studyDays     Int[]    @default([0, 1, 2, 3, 4]) @map("study_days")
+  busyNote      String   @default("") @map("busy_note") // «школа до 15:00, футбол вт/чт»
+  goal          String   @default("")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("study_profiles")
 }

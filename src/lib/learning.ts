@@ -49,12 +49,23 @@ export async function getCompletedLessonIds(studentId: string, lessonIds: string
   return new Set(rows.map((r) => r.lessonId));
 }
 
+/** Уроки, домашку яких дитині видано, але вона її ще не здала. */
+export async function getPendingHomeworkLessonIds(studentId: string, lessonIds: string[]) {
+  if (!lessonIds.length) return new Set<string>();
+  const rows = await prisma.submission.findMany({
+    where: { userId: studentId, status: "pending", homework: { lessonId: { in: lessonIds } } },
+    select: { homework: { select: { lessonId: true } } },
+  });
+  return new Set(rows.map((r) => r.homework.lessonId));
+}
+
 /** Стан кожного уроку курсу для конкретної дитини. */
 export async function getCourseState(slug: string, studentId: string | null) {
   const course = await getCourseBySlug(slug);
   if (!course) return null;
   const { lessons } = course;
   const completed = studentId ? await getCompletedLessonIds(studentId, lessons.map((l) => l.id)) : new Set<string>();
+  const pendingHomework = studentId ? await getPendingHomeworkLessonIds(studentId, lessons.map((l) => l.id)) : new Set<string>();
   const subs = studentId ? await getStudentSubscriptions(studentId) : [];
   const minPlan = course.minPlan.code;
   const items = lessons.map((lesson, idx) => {
@@ -65,6 +76,7 @@ export async function getCourseState(slug: string, studentId: string | null) {
       minPlan,
       lessonOrder: lesson.order,
       previousLessonCompleted: !prev || completed.has(prev.id),
+      previousHomeworkPending: !!prev && pendingHomework.has(prev.id),
       subscriptions: subs,
     });
     return { lesson, done: completed.has(lesson.id), access };

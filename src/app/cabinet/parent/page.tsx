@@ -10,6 +10,8 @@ import { getChildren, requireUser } from "@/lib/dal";
 import { PAYMENT_STATUS_LABELS, SUBSCRIPTION_STATUS_LABELS, formatDate, formatShortDate, formatUah } from "@/lib/format";
 import { getStudentOverview, toAccessSub } from "@/lib/learning";
 import { isStalePending } from "@/lib/billing";
+import { getPlanner } from "@/lib/planner-data";
+import { ChildPlanner } from "@/components/child-planner";
 
 export const metadata: Metadata = { title: "Кабінет батьків" };
 
@@ -33,6 +35,7 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
   const sp = await searchParams;
   const kids = await getChildren(parent.id);
   const overviews = await Promise.all(kids.map((k) => getStudentOverview(k.id)));
+  const planners = await Promise.all(kids.map((k) => getPlanner(k.id)));
 
   const subs = await prisma.subscription.findMany({
     where: { userId: parent.id },
@@ -72,6 +75,7 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
 
       {kids.map((kid, i) => {
         const o = overviews[i];
+        const plan = planners[i];
         const pendingHw = o.homework.filter((h) => h.status === "pending").length;
         return (
           <section key={kid.id} className="flex flex-col gap-5" aria-labelledby={`kid-${kid.id}`}>
@@ -97,6 +101,7 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
             {!o.plan && (
               <p className="text-muted">Для {kid.name} немає активної підписки: доступні 2 безкоштовні уроки кожного курсу. <Link href="/pricing" className="text-accent underline">Обрати тариф</Link></p>
             )}
+            <ChildPlanner name={kid.name} slots={plan.slots} tasks={plan.tasks} minutesPerDay={plan.profile.minutesPerDay} />
             <div className="card flex flex-col gap-3.5 px-8 py-7">
               <h3 className="text-[19px] font-bold">Домашки та коментарі викладача</h3>
               {o.homework.length === 0 && <p className="text-muted">Домашок поки немає.</p>}

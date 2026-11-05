@@ -210,3 +210,32 @@ html.has-custom-cursor * { cursor: none !important; }
 html.has-custom-cursor input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
 html.has-custom-cursor textarea,
 html.has-custom-cursor [contenteditable="true"] { cursor: text !important; }
+
+/* ───────────── Кабінет учня: «скляні» панелі й робот-помічник ───────────── */
+@utility glass {
+  @apply rounded-3xl border border-white/70 bg-white/60 shadow-[0_24px_60px_-28px_rgb(109_74_255/0.45)] backdrop-blur-xl;
+}
+@utility glass-strong {
+  @apply rounded-3xl border border-white/80 bg-white/75 shadow-[0_24px_60px_-28px_rgb(109_74_255/0.5)] backdrop-blur-2xl;
+}
+
+@keyframes robot-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes robot-shadow { 0%, 100% { transform: scaleX(1); opacity: 0.18; } 50% { transform: scaleX(0.85); opacity: 0.1; } }
+@keyframes robot-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+@keyframes robot-tablet { 0%, 100% { opacity: 1; } 50% { opacity: 0.88; } }
+@keyframes robot-bar { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.6); } }
+@keyframes robot-core { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+.robot .robot-body { animation: robot-float 4.5s ease-in-out infinite; }
+.robot .robot-shadow { transform-origin: 128px 288px; animation: robot-shadow 4.5s ease-in-out infinite; }
+.robot .robot-eyes { transform-origin: 123px 100px; animation: robot-blink 5s infinite; }
+.robot .robot-tablet { animation: robot-tablet 3s ease-in-out infinite; }
+.robot .robot-bar { transform-box: fill-box; transform-origin: bottom; animation: robot-bar 2.4s ease-in-out infinite; }
+.robot .robot-bar.b2 { animation-delay: 0.3s; }
+.robot .robot-bar.b3 { animation-delay: 0.6s; }
+.robot .robot-bar.b4 { animation-delay: 0.9s; }
+.robot .robot-core { animation: robot-core 2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .robot *, .robot .robot-body { animation: none !important; }
+}
