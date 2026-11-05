@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Mascot } from "@/components/mascot";
 import { prisma } from "@/db";
 import { AddChildForm } from "@/components/add-child-form";
 import { CancelSubscriptionForm, ChildPasswordForm, DeleteChildForm } from "@/components/parent-forms";
@@ -61,12 +62,13 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
         <Notice>Дякуємо! Щойно WayForPay підтвердить оплату (зазвичай за кілька секунд), статус підписки нижче оновиться. Оновіть сторінку.</Notice>
       )}
 
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <div className="flex flex-col gap-1.5">
-          <h1 className="font-display text-3xl font-bold">Кабінет батьків</h1>
-          <p className="text-[17px] text-muted">Прогрес, домашки та оплата — в одному місці</p>
+      <div className="bg-pearl relative flex flex-col items-start justify-end gap-5 overflow-hidden rounded-(--radius-card) p-7 shadow-soft md:min-h-[240px] md:p-9 md:pr-[340px]">
+        <div className="relative flex flex-col gap-2">
+          <h1 className="font-display text-3xl font-extrabold md:text-[40px]">Привіт, {parent.name}! 👋</h1>
+          <p className="text-[17px] text-soft">Прогрес, домашки та оплата — в одному місці</p>
         </div>
-        <Link href="#add-child" className="btn-ghost">+ Додати дитину</Link>
+        <Link href="#add-child" className="btn-primary relative">+ Додати дитину</Link>
+        <Mascot className="absolute right-6 -bottom-4 hidden h-[250px] w-[320px] md:block" sizes="320px" />
       </div>
 
       {kids.length === 0 && (
@@ -79,18 +81,22 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
         const pendingHw = o.homework.filter((h) => h.status === "pending").length;
         return (
           <section key={kid.id} className="flex flex-col gap-5" aria-labelledby={`kid-${kid.id}`}>
-            <h2 id={`kid-${kid.id}`} className="font-display text-2xl font-bold">
-              {kid.name}
-              {kid.birthYear ? <span className="ml-2 text-base font-normal text-muted">· {new Date().getFullYear() - kid.birthYear} років · логін {kid.login}</span> : null}
-            </h2>
-            <div className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="bg-iris flex h-11 w-11 items-center justify-center rounded-full text-lg font-bold text-white" aria-hidden>
+                {kid.name.slice(0, 1).toUpperCase()}
+              </span>
+              <h2 id={`kid-${kid.id}`} className="font-display text-2xl font-extrabold">{kid.name}</h2>
+              {kid.birthYear ? <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-muted shadow-pill">{new Date().getFullYear() - kid.birthYear} років</span> : null}
+              <span className="rounded-full bg-white px-3 py-1 font-mono text-sm text-muted shadow-pill">@{kid.login}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
               <Stat label="Уроків за тиждень" value={String(o.lessonsThisWeek)} />
               <Stat label="Домашки здано" value={`${o.homework.length - pendingHw} з ${o.homework.length}`} />
               <Stat label="Рівень" value={`${o.level.level} · ${o.level.title}`} />
               <Stat label="Серія днів" value={String(o.streak)} />
             </div>
             <details className="card px-8 py-5">
-              <summary className="cursor-pointer text-[17px] font-bold marker:text-accent">Логін і пароль для входу</summary>
+              <summary className="cursor-pointer text-[17px] font-bold">Логін і пароль для входу</summary>
               <div className="mt-4">
                 <ChildPasswordForm childId={kid.id} login={kid.login} />
               </div>
@@ -240,9 +246,9 @@ export default async function ParentCabinet({ searchParams }: PageProps<"/cabine
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="card flex flex-col gap-2 px-4 py-4 sm:px-6 sm:py-5.5">
-      <span className="text-sm text-muted">{label}</span>
-      <span className="font-display text-xl font-bold sm:text-2xl">{value}</span>
+    <div className="card flex flex-col gap-2 px-5 py-5 sm:px-6 sm:py-6">
+      <span className="text-sm font-semibold text-muted">{label}</span>
+      <span className="font-display text-xl font-extrabold tracking-tight sm:text-[28px]">{value}</span>
     </div>
   );
 }

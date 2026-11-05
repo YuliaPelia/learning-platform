@@ -5,59 +5,64 @@ import { getCurrentUser, homeFor } from "@/lib/dal";
 export function Logo({ small = false }: { small?: boolean }) {
   return (
     <Link href="/" className="flex flex-col gap-0.5" aria-label="ITCodeCraft — на головну">
-      <span className={`font-display font-bold tracking-tight ${small ? "text-lg" : "text-lg min-[380px]:text-xl sm:text-[22px]"}`}>
+      <span className={`font-display leading-none font-extrabold tracking-tight ${small ? "text-lg" : "text-lg min-[380px]:text-xl sm:text-[21px]"}`}>
         IT<span className="text-accent">Code</span>Craft
       </span>
-      <span className="text-[10px] tracking-[3px] text-muted">IT SCHOOL · ONLINE</span>
+      <span className="text-[10px] font-semibold tracking-[3px] text-faint">IT SCHOOL · ONLINE</span>
     </Link>
   );
 }
 
+const MENU = [
+  ["/#courses", "Курси"],
+  ["/#how", "Як навчаємось"],
+  ["/#parents", "Для батьків"],
+  ["/pricing", "Тарифи"],
+] as const;
+
 export async function SiteHeader() {
   const user = await getCurrentUser();
   return (
-    <header className="border-b border-line">
-      <div className="mx-auto flex h-[72px] max-w-[1200px] items-center justify-between gap-3 px-4 sm:gap-6 md:h-[88px] md:px-6">
+    <header className="sticky top-0 z-40 px-3 pt-3 md:px-6">
+      {/* Плаваюча біла «таблетка»-шапка */}
+      <div className="mx-auto flex h-16 max-w-[1240px] items-center justify-between gap-3 rounded-full border border-white/80 bg-white/85 pr-2 pl-5 shadow-soft backdrop-blur-xl md:h-[72px] md:pr-3 md:pl-7">
         <Logo />
-        <nav className="hidden gap-9 font-medium text-soft lg:flex" aria-label="Головне меню">
-          <Link href="/#courses" className="hover:text-text">Курси</Link>
-          <Link href="/#how" className="hover:text-text">Як навчаємось</Link>
-          <Link href="/#parents" className="hover:text-text">Для батьків</Link>
-          <Link href="/pricing" className="hover:text-text">Тарифи</Link>
+        <nav className="hidden items-center gap-1 rounded-full bg-surface-2 p-1 lg:flex" aria-label="Головне меню">
+          {MENU.map(([href, label]) => (
+            <Link key={href} href={href} className="inline-flex h-10 items-center rounded-full px-4.5 text-sm font-semibold text-soft transition-colors hover:bg-white hover:text-text hover:shadow-pill">
+              {label}
+            </Link>
+          ))}
         </nav>
-        <div className="flex items-center gap-1.5 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {user ? (
             <>
-              <Link href={homeFor(user.role)} className="btn-ghost h-11 px-3 min-[380px]:px-4 sm:px-6">Кабінет</Link>
+              <Link href={homeFor(user.role)} className="btn-primary h-11 px-4 sm:px-5">
+                Кабінет
+              </Link>
               <form action={logout}>
-                <button className="group relative inline-flex cursor-pointer items-center gap-1.5 py-1 text-sm text-muted transition-colors duration-200 hover:text-accent focus-visible:text-accent after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-accent after:transition-transform after:duration-300 hover:after:scale-x-100 focus-visible:after:scale-x-100 h-11 px-1 min-[380px]:px-2">
-                  Вийти
-                  <svg aria-hidden viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="hidden h-3.5 w-3.5 transition-transform duration-200 min-[380px]:block group-hover:translate-x-1 group-focus-visible:translate-x-1">
-                <path d="M4 10h11m0 0-4-4m4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+                <button className="icon-btn h-11 w-11 hover:text-danger" aria-label="Вийти" title="Вийти">
+                  <svg aria-hidden viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4.5 w-4.5">
+                    <path d="M8 4H5.5A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8M12 6.5 15.5 10 12 13.5M15.5 10H8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </button>
               </form>
             </>
           ) : (
             <>
-              <Link href="/login" className="btn-ghost h-11 px-4 sm:px-6">Увійти</Link>
-              <Link href="/register" className="btn-primary hidden h-11 sm:inline-flex">2 уроки безкоштовно</Link>
+              <Link href="/login" className="btn-ghost h-11 px-4 shadow-none sm:px-5">Увійти</Link>
+              <Link href="/register" className="btn-primary hidden h-11 px-5 sm:inline-flex">2 уроки безкоштовно</Link>
             </>
           )}
         </div>
       </div>
       {/* На вузьких екранах головне меню — горизонтальна смуга під шапкою (без JS) */}
       <nav
-        className="mx-auto flex max-w-[1200px] gap-2 overflow-x-auto px-4 pb-3 text-sm font-medium text-soft [scrollbar-width:none] lg:hidden md:px-6 [&::-webkit-scrollbar]:hidden"
+        className="mx-auto mt-2 flex max-w-[1240px] gap-1.5 overflow-x-auto px-1 text-sm font-semibold [scrollbar-width:none] lg:hidden [&::-webkit-scrollbar]:hidden"
         aria-label="Головне меню (мобільне)"
       >
-        {[
-          ["/#courses", "Курси"],
-          ["/#how", "Як навчаємось"],
-          ["/#parents", "Для батьків"],
-          ["/pricing", "Тарифи"],
-        ].map(([href, label]) => (
-          <Link key={href} href={href} className="shrink-0 rounded-full border border-line bg-white/70 px-3.5 py-1.5 hover:border-accent hover:text-accent">
+        {MENU.map(([href, label]) => (
+          <Link key={href} href={href} className="chip h-9 bg-white/85 backdrop-blur">
             {label}
           </Link>
         ))}
@@ -68,8 +73,8 @@ export async function SiteHeader() {
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-line">
-      <div className="mx-auto flex max-w-[1200px] flex-col gap-4 px-4 py-10 text-sm text-muted md:flex-row md:items-center md:justify-between md:px-6">
+    <footer className="px-3 pb-3 md:px-6 md:pb-6">
+      <div className="mx-auto flex max-w-[1240px] flex-col gap-4 rounded-(--radius-card) bg-white px-6 py-8 text-sm text-muted shadow-soft md:flex-row md:items-center md:justify-between md:px-9">
         <span>
           © ITCodeCraft · ФОП Войціховська Надія Валентинівна, ІПН 2599110948
           {" · "}
@@ -93,7 +98,7 @@ export async function PublicShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pb-6">{children}</main>
       <SiteFooter />
     </div>
   );

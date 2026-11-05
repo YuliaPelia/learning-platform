@@ -5,7 +5,7 @@ import { CabinetShell, Notice, StatusBadge } from "@/components/cabinet-shell";
 import { DeleteAccountForm } from "@/components/delete-account-form";
 import { IconCheck, IconFlame, IconLock, IconPlay, IconStar, IconX } from "@/components/icons";
 import { AddSlotForm, AddTaskForm, StudyProfileForm } from "@/components/planner-forms";
-import { Robot } from "@/components/robot";
+import { Mascot, MascotAvatar } from "@/components/mascot";
 import { requireUser } from "@/lib/dal";
 import { formatShortDate, pluralDays } from "@/lib/format";
 import { getStudentOverview } from "@/lib/learning";
@@ -78,27 +78,22 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
 
   return (
     <CabinetShell nav={NAV} user={student} roleLabel="Учень">
-      {/* Кольорові розмиті плями — на них «скло» панелей виглядає живим */}
-      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-32 right-[-10%] h-[520px] w-[520px] rounded-full bg-[#c4b5fd] opacity-50 blur-3xl" />
-        <div className="absolute top-[35%] left-[15%] h-[420px] w-[420px] rounded-full bg-[#f5d0fe] opacity-50 blur-3xl" />
-        <div className="absolute right-[20%] bottom-[-10%] h-[460px] w-[460px] rounded-full bg-[#bae6fd] opacity-50 blur-3xl" />
-      </div>
-
       {sp.asked && <Notice tone="success">Ми надіслали батькам лист із проханням відкрити курс 🙌</Notice>}
 
       <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
         {/* ── Привітання з роботом ── */}
         <section className="glass relative overflow-hidden p-6 md:p-8" aria-labelledby="hello">
-          <div aria-hidden className="absolute inset-0 -z-10 bg-[radial-gradient(40rem_20rem_at_85%_10%,rgb(193_85_232/0.18),transparent_60%),radial-gradient(30rem_20rem_at_10%_100%,rgb(109_74_255/0.14),transparent_60%)]" />
-          <div className="grid items-center gap-6 md:grid-cols-[1fr_200px]">
+          <div className="grid items-center gap-6 md:grid-cols-[1fr_260px]">
             <div className="flex flex-col gap-4">
-              <h1 id="hello" className="font-display text-3xl font-bold md:text-[34px]">
+              <h1 id="hello" className="font-display text-3xl font-extrabold md:text-[38px]">
                 {greeting(kyivHour(now))}, {student.name}! 👋
               </h1>
-              <div className="relative max-w-[560px] rounded-2xl rounded-tl-md border border-white/80 bg-white/80 px-4.5 py-3.5 text-[15px] leading-relaxed text-soft shadow-sm">
-                <span className="mb-1 block text-xs font-bold tracking-wide text-accent uppercase">Робот Кодик</span>
-                {tip}
+              <div className="flex max-w-[580px] items-start gap-3">
+                <MascotAvatar size={44} className="mt-0.5 md:hidden" />
+                <div className="relative rounded-[20px] rounded-tl-md bg-surface-2 px-4.5 py-3.5 text-[15px] leading-relaxed text-soft">
+                  <span className="mb-1 block text-xs font-bold tracking-wide text-accent uppercase">Робот Кодик</span>
+                  {tip}
+                </div>
               </div>
               {profile.goal && (
                 <p className="text-sm text-muted">
@@ -116,7 +111,7 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
                 <Link href="#schedule" className="btn-ghost h-12">Мій розклад</Link>
               </div>
             </div>
-            <Robot className="mx-auto hidden h-[220px] w-[200px] md:block" />
+            <Mascot framed className="hidden aspect-[930/735] w-full md:block" sizes="260px" />
           </div>
 
           <dl className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -206,11 +201,11 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
             const level = loadLevel(perDay[day], profile.minutesPerDay);
             const isStudyDay = profile.studyDays.includes(day);
             return (
-              <li key={d} className={`flex min-h-[150px] flex-col gap-2 rounded-2xl border p-3 ${day === today ? "border-accent/60 bg-white/80 ring-2 ring-accent/15" : "border-white/80 bg-white/45"}`}>
+              <li key={d} className={`flex min-h-[150px] flex-col gap-2 rounded-[20px] border p-3 ${day === today ? "border-text bg-white shadow-pill" : "border-transparent bg-surface-2"}`}>
                 <div className="flex items-baseline justify-between gap-2">
                   <span className="font-bold">
                     {WEEKDAYS_FULL[day]}
-                    {day === today && <span className="ml-1.5 text-xs font-semibold text-accent">сьогодні</span>}
+                    {day === today && <span className="ml-1.5 rounded-full bg-text px-2 py-0.5 text-[10px] font-bold text-white">сьогодні</span>}
                   </span>
                   <span
                     className={`text-xs font-semibold ${level === "over" ? "text-danger" : level === "ok" ? "text-good" : "text-faint"}`}
@@ -243,8 +238,8 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
           })}
         </ol>
 
-        <details className="rounded-2xl border border-white/80 bg-white/55 p-4" open={slots.length === 0}>
-          <summary className="cursor-pointer font-semibold text-accent">+ Додати заняття</summary>
+        <details className="rounded-[20px] bg-surface-2 p-4" open={slots.length === 0}>
+          <summary className="cursor-pointer font-semibold">+ Додати заняття</summary>
           <div className="mt-4">
             <AddSlotForm defaultDay={today} />
           </div>
@@ -273,7 +268,7 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
                     <form action={toggleTask}>
                       <input type="hidden" name="taskId" value={t.id} />
                       <button
-                        className={`flex h-7 w-7 items-center justify-center rounded-lg border-2 transition ${t.done ? "border-accent bg-accent text-white" : "border-line-2 bg-white hover:border-accent"}`}
+                        className={`flex h-7 w-7 items-center justify-center rounded-lg border-2 transition ${t.done ? "border-text bg-text text-white" : "border-line-2 bg-white hover:border-text"}`}
                         aria-label={t.done ? `Повернути «${t.title}» у роботу` : `Позначити «${t.title}» виконаною`}
                         aria-pressed={t.done}
                       >
@@ -303,9 +298,8 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
 
         {/* ── Мій тиждень: навантаження й ціль ── */}
         <section id="week" className="glass relative flex scroll-mt-6 flex-col gap-5 overflow-hidden p-6 md:p-7" aria-labelledby="week-h">
-          <div aria-hidden className="absolute -top-16 -right-16 -z-10 h-48 w-48 rounded-full bg-[#c4b5fd] opacity-40 blur-2xl" />
-          <div className="flex items-center gap-3">
-            <Robot className="h-16 w-14 shrink-0" />
+                    <div className="flex items-center gap-3">
+            <MascotAvatar size={56} />
             <div>
               <h2 id="week-h" className="text-xl font-bold">Мій тиждень</h2>
               <p className="text-sm text-muted">Скажи, скільки часу маєш, — і я підсвічу дні, де навантаження забагато.</p>
@@ -322,7 +316,7 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
             <h2 id="progress-h" className="text-xl font-bold">Активність за 7 днів</h2>
             <p className="text-sm text-muted">Пройдені уроки й здані домашки щодня</p>
           </div>
-          <div className="flex h-44 items-end gap-2 border-b border-line-2/70 pb-px" role="img" aria-label={`Активність за 7 днів: ${o.week.map((d) => `${d.day.slice(5)} — ${d.count}`).join(", ")}`}>
+          <div className="flex h-44 items-end gap-2 pb-px" role="img" aria-label={`Активність за 7 днів: ${o.week.map((d) => `${d.day.slice(5)} — ${d.count}`).join(", ")}`}>
             {o.week.map((d) => {
               const isToday = d.day === todayKey;
               return (
@@ -331,7 +325,7 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
                     {formatShortDate(new Date(`${d.day}T12:00:00Z`))}: {d.count}
                   </span>
                   <div
-                    className={`w-full max-w-9 rounded-t ${d.count ? (isToday ? "bg-accent" : "bg-accent/55") : "bg-line"}`}
+                    className={`w-full max-w-9 rounded-full ${d.count ? (isToday ? "bg-text" : "bg-iris") : "bg-line"}`}
                     style={{ height: d.count ? `${Math.max(8, (d.count / maxActivity) * 100)}%` : "4px" }}
                   />
                 </div>
@@ -340,7 +334,7 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
           </div>
           <div className="flex gap-2 text-center text-xs text-muted" aria-hidden>
             {o.week.map((d) => (
-              <span key={d.day} className={`flex-1 ${d.day === todayKey ? "font-bold text-accent" : ""}`}>
+              <span key={d.day} className={`flex-1 ${d.day === todayKey ? "font-bold text-text" : ""}`}>
                 {WEEKDAYS[(new Date(`${d.day}T12:00:00Z`).getUTCDay() + 6) % 7]}
               </span>
             ))}
@@ -358,13 +352,13 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
           {courses.map((c) => {
             const pct = c.total ? Math.round((c.done / c.total) * 100) : 0;
             return (
-              <Link key={c.id} href={c.next ? `/learn/${c.slug}/${c.next.order}` : `/courses/${c.slug}`} className="flex flex-col gap-2 rounded-2xl border border-white/80 bg-white/60 p-4 hover:bg-white/85">
+              <Link key={c.id} href={c.next ? `/learn/${c.slug}/${c.next.order}` : `/courses/${c.slug}`} className="flex flex-col gap-2 rounded-2xl bg-surface-2 p-4 hover:bg-[#eceef3]">
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="font-semibold">{c.title}</span>
-                  <span className="text-sm font-bold text-accent">{pct}%</span>
+                  <span className="font-mono text-sm font-bold">{pct}%</span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`Прогрес курсу ${c.title}`}>
-                  <div className="h-full rounded-full bg-[linear-gradient(90deg,#6d4aff,#c155e8)]" style={{ width: `${pct}%` }} />
+                <div className="h-2 overflow-hidden rounded-full bg-white" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`Прогрес курсу ${c.title}`}>
+                  <div className="h-full rounded-full bg-iris" style={{ width: `${pct}%` }} />
                 </div>
                 <span className="text-xs text-muted">
                   {c.done} з {c.total} уроків{c.next ? ` · далі: ${c.next.title}` : " · курс пройдено 🎉"}
@@ -383,7 +377,7 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
         </div>
         {o.homework.length === 0 && <p className="text-muted">Поки що домашок немає — вони з’являються після уроків.</p>}
         {o.homework.map((h) => (
-          <Link key={h.id} href={`/learn/${h.courseSlug}/${h.lessonOrder}#homework`} className="flex min-h-16 items-center justify-between gap-4 rounded-2xl border border-white/80 bg-white/60 px-4.5 py-3 hover:bg-white/85">
+          <Link key={h.id} href={`/learn/${h.courseSlug}/${h.lessonOrder}#homework`} className="flex min-h-16 items-center justify-between gap-4 rounded-2xl bg-surface-2 px-4.5 py-3 hover:bg-[#eceef3]">
             <div className="flex flex-col gap-1">
               <span className="font-semibold">
                 {h.courseTitle} · урок {h.lessonOrder}: {h.lessonTitle}
@@ -405,10 +399,10 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
       </section>
 
       <section id="courses" className="flex scroll-mt-6 flex-col gap-4">
-        <h2 className="font-display text-2xl font-bold">Усі курси</h2>
+        <h2 className="font-display text-2xl font-extrabold">Усі курси</h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {published.map((c) => (
-            <Link key={c.id} href={`/courses/${c.slug}`} className="glass flex flex-col gap-2 p-6 hover:border-accent">
+            <Link key={c.id} href={`/courses/${c.slug}`} className="glass hover-lift flex flex-col gap-2 p-6">
               <span className="text-lg font-bold">{c.title}</span>
               <span className="text-sm text-muted">{c.description}</span>
             </Link>
@@ -417,7 +411,7 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
             .filter((c) => c.status === "soon")
             .slice(0, 4)
             .map((c) => (
-              <div key={c.id} className="flex flex-col gap-2 rounded-3xl border border-dashed border-line-2 bg-white/30 p-6 text-muted">
+              <div key={c.id} className="flex flex-col gap-2 rounded-(--radius-card) border border-dashed border-line-2 p-6 text-muted">
                 <span className="text-lg font-bold">{c.title}</span>
                 <span className="text-sm text-amber">Скоро</span>
               </div>
@@ -438,12 +432,12 @@ export default async function StudentCabinet({ searchParams }: PageProps<"/cabin
 
 function StatTile({ label, value, hint, progress }: { label: string; value: string; hint: string; progress?: number }) {
   return (
-    <div className="flex flex-col gap-1 rounded-2xl border border-white/80 bg-white/65 p-4">
+    <div className="flex flex-col gap-1 rounded-2xl bg-surface-2 p-4">
       <dt className="text-xs font-semibold text-muted">{label}</dt>
       <dd className="font-display text-xl font-bold">{value}</dd>
       {progress != null && (
-        <div className="h-1.5 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="До наступного рівня">
-          <div className="h-full rounded-full bg-accent" style={{ width: `${Math.round(progress * 100)}%` }} />
+        <div className="h-1.5 overflow-hidden rounded-full bg-white" role="progressbar" aria-valuenow={Math.round(progress * 100)} aria-valuemin={0} aria-valuemax={100} aria-label="До наступного рівня">
+          <div className="bg-iris h-full rounded-full" style={{ width: `${Math.round(progress * 100)}%` }} />
         </div>
       )}
       <dd className="text-xs text-muted">{hint}</dd>
@@ -453,7 +447,7 @@ function StatTile({ label, value, hint, progress }: { label: string; value: stri
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/80 bg-white/60 p-3">
+    <div className="rounded-2xl bg-surface-2 p-3">
       <dt className="text-xs text-muted">{label}</dt>
       <dd className="font-display text-lg font-bold">{value}</dd>
     </div>

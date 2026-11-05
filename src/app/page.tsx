@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/db";
 import { CourseCatalog, type CatalogGroup } from "@/components/course-catalog";
-import { IconArrow, IconCheck, IconClock, IconFlame, IconStar } from "@/components/icons";
-import { HeroSceneLazy } from "@/components/hero-scene-lazy";
+import { IconArrow, IconCheck, IconClock, IconFlame, IconLock, IconStar } from "@/components/icons";
+import { Mascot, MascotAvatar } from "@/components/mascot";
 import { Reveal } from "@/components/reveal";
 import { PublicShell } from "@/components/site-chrome";
 import { CATEGORY_LABELS } from "@/lib/format";
@@ -45,180 +45,171 @@ export default async function HomePage() {
 
   return (
     <PublicShell>
-      {/* Hero */}
-      <section className="mx-auto max-w-[1240px] px-4 pt-2 md:px-6">
-        <div className="bg-brand-flow relative overflow-hidden rounded-t-[36px] text-white md:rounded-t-[48px]">
-          {/* Декоративні світлові плями */}
-          <div aria-hidden className="pointer-events-none absolute -top-24 -left-20 h-72 w-72 rounded-full bg-white/15 blur-3xl anim-float" />
-          <div aria-hidden className="pointer-events-none absolute right-10 -bottom-20 h-80 w-80 rounded-full bg-pink/50 blur-3xl anim-float" style={{ animationDelay: "-2.5s", animationDuration: "8s" }} />
-
-          <div className="relative grid items-center gap-10 px-6 pt-12 pb-32 md:px-14 md:pt-16 lg:grid-cols-[1.05fr_1fr] lg:pb-36">
-            <div className="flex flex-col gap-7">
-              <div className="anim-rise flex min-h-[34px] items-center gap-2 self-start rounded-full border border-white/30 bg-white/15 px-3.5 py-1.5 text-sm leading-snug backdrop-blur">
-                <span className="h-2 w-2 shrink-0 rounded-full bg-white" />
-                Для дітей 9–17 років · онлайн, у своєму темпі
-              </div>
-              <h1 style={{ animationDelay: "0.1s" }} className="anim-rise font-display text-[28px] leading-[1.15] font-bold tracking-tight sm:text-4xl md:text-[50px]">
-                Місце, де діти стають <span className="rounded-2xl bg-white/20 px-2 backdrop-blur">творцями</span> своїх ідей та технологій
-              </h1>
-              <p style={{ animationDelay: "0.2s" }} className="anim-rise max-w-[540px] text-lg leading-relaxed text-white/85 md:text-xl">
-                Програмування, дизайн і геймдев за нашою програмою: уроки крок за кроком, домашки з нагадуваннями та рівні, як у грі.
-                Батьки бачать увесь прогрес.
-              </p>
-              <div style={{ animationDelay: "0.3s" }} className="anim-rise mt-2 flex flex-wrap gap-3.5">
-                <Link
-                  href="/register"
-                  className="btn h-14 w-full bg-white px-6 text-base text-accent sm:w-auto sm:px-7 sm:text-lg shadow-xl shadow-[#2d1a8c]/30 hover:-translate-y-0.5 hover:bg-white/95"
-                >
-                  Спробувати 2 уроки безкоштовно <IconArrow />
-                </Link>
-                <Link href="#courses" className="btn h-14 w-full border border-white/50 px-6 text-base text-white sm:w-auto sm:text-lg hover:bg-white/15">
-                  Обрати курс
-                </Link>
-              </div>
-              <p style={{ animationDelay: "0.4s" }} className="anim-rise text-sm text-white/75">Без картки · перші 2 уроки будь-якого курсу</p>
+      {/* ── Hero: bento із привітанням і карткою-маскотом ── */}
+      <section className="mx-auto grid max-w-[1240px] gap-4 px-3 pt-5 md:px-6 md:pt-6 lg:grid-cols-[1.05fr_1fr]">
+        <div className="card relative flex flex-col justify-between gap-10 overflow-hidden p-7 sm:p-10 md:p-12">
+          <div className="flex flex-col gap-6">
+            <div className="anim-rise flex items-center gap-2 self-start rounded-full bg-surface-2 py-1.5 pr-4 pl-1.5 text-sm font-semibold text-soft">
+              <span className="rounded-full bg-text px-2.5 py-0.5 text-xs text-white">9–17</span>
+              онлайн, у своєму темпі
             </div>
-
-            {/* Ілюстрація: орбіта з карткою прогресу */}
-            <div className="relative mx-auto hidden h-[470px] w-full max-w-[520px] lg:block" aria-hidden>
-              <div className="anim-spin-slow absolute inset-4 rounded-full border border-white/25" />
-              <div className="anim-spin-slow-rev absolute inset-14 rounded-full border border-dashed border-white/30" />
-              <div className="absolute inset-[88px] rounded-full bg-white/10 blur-sm" />
-              <HeroSceneLazy />
-
-              {[
-                ["top-2 left-[46%]", IconStar, "text-amber"],
-                ["top-[96px] right-2", IconFlame, "text-pink"],
-                ["bottom-[84px] right-6", IconCheck, "text-good"],
-                ["bottom-4 left-[40%]", IconClock, "text-accent"],
-                ["bottom-[110px] left-0", IconStar, "text-accent"],
-                ["top-[110px] left-1", IconCheck, "text-pink"],
-              ].map(([pos, Icon, color], i) => {
-                const I = Icon as typeof IconStar;
-                return (
-                  <div
-                    key={i}
-                    style={{ animationDuration: `${4 + (i % 3)}s`, animationDelay: `${-i * 0.8}s` }}
-                    className={`anim-float absolute ${pos} flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-lg shadow-[#2d1a8c]/25 ${color}`}
-                  >
-                    <I size={22} />
-                  </div>
-                );
-              })}
-
-              <div style={{ animationDelay: "0.35s" }} className="anim-rise absolute top-[70px] left-1/2 flex w-[330px] -translate-x-1/2 flex-col gap-4 rounded-[28px] bg-white p-6 text-text shadow-2xl shadow-[#2d1a8c]/35">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-xs text-muted">Курс · Python</span>
-                    <span className="font-display text-base font-bold">Рівень 4 · Дослідник</span>
-                  </div>
-                  <div className="flex h-9 items-center gap-1 rounded-full bg-amber/15 px-2.5 text-sm font-bold text-amber">
-                    <IconFlame size={16} /> 7
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex justify-between text-xs text-muted">
-                    <span>XP до рівня 5</span>
-                    <span className="font-mono">640 / 800</span>
-                  </div>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-line">
-                    <div className="bg-brand anim-bar h-full w-4/5 rounded-full" />
-                  </div>
-                </div>
-                <div className="rounded-2xl bg-ink p-3.5 font-mono text-[13px] leading-6 text-soft">
-                  <div>
-                    <span className="text-violet">for</span> level <span className="text-violet">in</span> range(1, 6):
-                  </div>
-                  <div>
-                    {"    "}print(<span className="text-amber">&quot;Новий рівень!&quot;</span>, level)
-                  </div>
-                </div>
-                <div className="flex gap-2 text-[13px] font-semibold">
-                  <div className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-2xl bg-good/10 text-good">
-                    <IconCheck size={16} /> Урок 5
-                  </div>
-                  <div className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-2xl bg-amber/15 text-amber">
-                    <IconClock size={16} /> До п’ятниці
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ animationDelay: "0.8s" }} className="anim-pop absolute bottom-[34px] left-[-6px] flex w-[220px] items-center gap-3 rounded-3xl bg-white/95 px-4 py-3 text-text shadow-xl shadow-[#2d1a8c]/25">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber/15 text-amber">
-                  <IconStar size={20} />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-muted">Новий бейдж</span>
-                  <span className="text-sm font-bold">Майстер циклів</span>
-                </div>
-              </div>
-              <div style={{ animationDelay: "1s" }} className="anim-pop absolute right-[-6px] bottom-[-6px] flex w-[210px] flex-col gap-0.5 rounded-3xl bg-white/95 px-4 py-3 text-text shadow-xl shadow-[#2d1a8c]/25">
-                <span className="text-xs text-muted">Звіт для батьків</span>
-                <span className="text-sm font-bold">3 уроки й 2 домашки за тиждень</span>
-              </div>
+            <h1 style={{ animationDelay: "0.08s" }} className="anim-rise font-display text-[34px] leading-[1.05] font-extrabold tracking-[-0.035em] sm:text-5xl md:text-[60px]">
+              Місце, де діти стають{" "}
+              <span className="relative inline-block">
+                <span className="relative z-10">творцями</span>
+                <span aria-hidden className="bg-iris absolute inset-x-[-4px] bottom-[0.08em] h-[0.32em] rounded-full opacity-70" />
+              </span>{" "}
+              своїх ідей
+            </h1>
+            <p style={{ animationDelay: "0.16s" }} className="anim-rise max-w-[520px] text-lg leading-relaxed text-muted">
+              Програмування, дизайн і геймдев за нашою програмою: уроки крок за кроком, домашки з нагадуваннями та рівні, як у грі. Батьки бачать увесь прогрес.
+            </p>
+            <div style={{ animationDelay: "0.24s" }} className="anim-rise flex flex-wrap gap-3">
+              <Link href="/register" className="btn-primary h-14 w-full px-6 text-[15px] sm:w-auto sm:px-7 sm:text-base">
+                Спробувати 2 уроки безкоштовно <IconArrow size={18} />
+              </Link>
+              <Link href="#courses" className="btn-ghost h-14 w-full px-7 text-base sm:w-auto">
+                Обрати курс
+              </Link>
             </div>
           </div>
+          <dl style={{ animationDelay: "0.32s" }} className="anim-rise grid grid-cols-3 gap-2 sm:gap-3">
+            {[
+              ["2 уроки", "безкоштовно"],
+              ["Без картки", "для старту"],
+              ["XP і бейджі", "мотивують"],
+            ].map(([v, l]) => (
+              <div key={v} className="tile flex flex-col gap-0.5 px-3.5 py-3 sm:px-4">
+                <dt className="order-2 text-xs text-muted sm:text-sm">{l}</dt>
+                <dd className="text-sm font-bold sm:text-base">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
 
-          {/* Хвиля внизу, як на макеті */}
-          <svg aria-hidden viewBox="0 0 1440 120" preserveAspectRatio="none" className="absolute inset-x-0 -bottom-px h-20 w-full md:h-28">
-            <path d="M0 70 C 240 130, 480 0, 760 40 S 1240 120, 1440 50 L1440 120 L0 120 Z" fill="var(--color-ink)" />
-          </svg>
+        {/* Маскот у перламутровій картці + «віджети» прогресу поверх */}
+        <div className="relative min-h-[420px] overflow-hidden rounded-(--radius-card) bg-[#efeafd] shadow-soft sm:min-h-[520px]" aria-hidden>
+          <Mascot framed cover priority className="absolute inset-0 rounded-none" sizes="(min-width: 1024px) 620px, 100vw" />
+
+          <div style={{ animationDelay: "0.4s" }} className="anim-rise absolute top-5 left-5 flex items-center gap-2 rounded-full bg-white/90 py-1.5 pr-3.5 pl-1.5 shadow-pill backdrop-blur">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber/15 text-amber"><IconFlame size={16} /></span>
+            <span className="text-sm font-bold">7 днів поспіль</span>
+          </div>
+          <div style={{ animationDelay: "0.55s" }} className="anim-pop absolute top-5 right-5 hidden items-center gap-2.5 rounded-2xl bg-white/90 px-3 py-2.5 shadow-pill backdrop-blur sm:flex">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-text text-white"><IconStar size={17} /></span>
+            <span className="flex flex-col leading-tight">
+              <span className="text-[11px] text-muted">Новий бейдж</span>
+              <span className="text-sm font-bold">Майстер циклів</span>
+            </span>
+          </div>
+
+          <div style={{ animationDelay: "0.7s" }} className="anim-rise absolute inset-x-4 bottom-4 flex flex-col gap-3 rounded-[22px] bg-white/92 p-4 shadow-lift backdrop-blur-xl sm:inset-x-auto sm:right-5 sm:bottom-5 sm:w-[300px] sm:p-5">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex flex-col">
+                <span className="text-xs text-muted">Курс · Python</span>
+                <span className="font-bold">Рівень 4 · Дослідник</span>
+              </div>
+              <span className="icon-btn h-8 w-8 shadow-none"><IconArrow size={14} className="-rotate-45" /></span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex justify-between text-xs text-muted">
+                <span>XP до рівня 5</span>
+                <span className="font-mono text-text">640 / 800</span>
+              </div>
+              <div className="h-2.5 overflow-hidden rounded-full bg-surface-2">
+                <div className="bg-iris anim-bar h-full w-4/5 rounded-full" />
+              </div>
+            </div>
+            <div className="flex gap-2 text-xs font-semibold">
+              <span className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-good/10 text-good"><IconCheck size={14} /> Урок 5</span>
+              <span className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-surface-2 text-soft"><IconClock size={14} /> До п’ятниці</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Як навчаємось */}
-      <section id="how" className="mx-auto flex max-w-[1200px] flex-col gap-9 px-4 pt-10 pb-[72px] md:px-6">
-        <Reveal><h2 className="font-display text-3xl font-bold sm:text-4xl">Як навчаємось</h2></Reveal>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      {/* ── Як навчаємось ── */}
+      <section id="how" className="mx-auto flex max-w-[1240px] scroll-mt-28 flex-col gap-6 px-3 pt-16 md:px-6 md:pt-24">
+        <Reveal className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
+          <h2 className="font-display text-3xl font-extrabold sm:text-[42px]">Як навчаємось</h2>
+          <p className="max-w-[420px] text-muted">Чотири кроки, які повторюються з кожним уроком — дитина завжди знає, що робити далі.</p>
+        </Reveal>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {STEPS.map(([n, title, text], i) => (
-            <Reveal key={n} delay={i * 90} className="card hover-lift flex flex-col gap-3.5 p-7">
-              <span className="font-mono text-[15px] text-accent">{n}</span>
-              <h3 className="text-[21px] font-bold">{title}</h3>
+            <Reveal key={n} delay={i * 80} className="card hover-lift flex flex-col gap-4 p-6">
+              <div className="flex items-center justify-between">
+                <span className={`flex h-11 w-11 items-center justify-center rounded-full font-mono text-sm font-bold ${i === 0 ? "bg-text text-white" : "bg-surface-2 text-soft"}`}>{n}</span>
+                <span className="icon-btn h-9 w-9 shadow-none"><IconArrow size={14} className="-rotate-45" /></span>
+              </div>
+              <h3 className="text-xl font-bold">{title}</h3>
               <p className="leading-relaxed text-muted">{text}</p>
             </Reveal>
           ))}
         </div>
       </section>
 
-      {/* Курси */}
-      <section id="courses" className="bg-deep">
-        <div className="mx-auto max-w-[1200px] px-4 py-[72px] md:px-6">
-          <Reveal><CourseCatalog groups={groups} /></Reveal>
-        </div>
+      {/* ── Курси ── */}
+      <section id="courses" className="mx-auto max-w-[1240px] scroll-mt-28 px-3 pt-16 md:px-6 md:pt-24">
+        <Reveal><CourseCatalog groups={groups} /></Reveal>
       </section>
 
-      {/* Для батьків */}
-      <section id="parents" className="mx-auto grid max-w-[1200px] items-center gap-16 px-4 py-20 md:px-6 lg:grid-cols-2">
-        <Reveal className="flex flex-col gap-5">
-          <h2 className="font-display text-3xl leading-tight font-bold sm:text-4xl">Дитина навчається — батьки бачать усе</h2>
-          <p className="text-lg leading-relaxed text-soft">
-            Один кабінет на двох: дитина проходить уроки, а ви перевіряєте прогрес, домашки й оплату. Дитина нічого не оплачує сама.
-          </p>
+      {/* ── Для батьків: «дашборд» батьківського кабінету ── */}
+      <section id="parents" className="mx-auto grid max-w-[1240px] scroll-mt-28 gap-4 px-3 pt-16 md:px-6 md:pt-24 lg:grid-cols-[0.9fr_1.1fr]">
+        <Reveal className="card flex flex-col justify-between gap-8 p-7 sm:p-10">
+          <div className="flex flex-col gap-4">
+            <span className="self-start rounded-full bg-surface-2 px-3.5 py-1.5 text-sm font-semibold text-soft">Для батьків</span>
+            <h2 className="font-display text-3xl leading-[1.1] font-extrabold sm:text-[40px]">Дитина навчається — батьки бачать усе</h2>
+            <p className="text-lg leading-relaxed text-muted">
+              Один кабінет на двох: дитина проходить уроки, а ви перевіряєте прогрес, домашки й оплату. Дитина нічого не оплачує сама.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 rounded-[22px] bg-surface-2 p-3 pr-5">
+            <MascotAvatar size={52} />
+            <p className="text-sm leading-snug text-soft">
+              <b className="text-text">Кодик:</b> «За день до дедлайну домашки я нагадаю батькам на пошту — нічого не загубиться»
+            </p>
+          </div>
         </Reveal>
         <div className="grid gap-4 sm:grid-cols-2">
           {[
-            ["Прогрес", "Пройдені уроки, рівень і серія днів"],
-            ["Домашки", "Що здано, що чекає, коментарі викладача"],
-            ["Нагадування", "Лист перед дедлайном домашки і перед списанням"],
-            ["Безпечно", "Мінімум даних дитини, видалення в один клік"],
-          ].map(([t, d], i) => (
-            <Reveal key={t} delay={i * 90} className="card hover-lift flex flex-col gap-2 p-6">
-              <span className="text-lg font-bold">{t}</span>
-              <span className="leading-relaxed text-muted">{d}</span>
-            </Reveal>
-          ))}
+            ["Прогрес", "Пройдені уроки, рівень і серія днів", IconFlame, "72%"],
+            ["Домашки", "Що здано, що чекає, коментарі викладача", IconCheck, "5 / 6"],
+            ["Нагадування", "Лист перед дедлайном домашки і перед списанням", IconClock, "за 1 день"],
+            ["Безпечно", "Мінімум даних дитини, видалення в один клік", IconLock, "1 клік"],
+          ].map(([t, d, Icon, metric], i) => {
+            const I = Icon as typeof IconStar;
+            return (
+              <Reveal key={t as string} delay={i * 80} className="card hover-lift flex flex-col gap-5 p-6">
+                <div className="flex items-center justify-between">
+                  <span className={`flex h-11 w-11 items-center justify-center rounded-full ${i === 0 ? "bg-iris text-white" : "bg-surface-2 text-soft"}`}>
+                    <I size={19} />
+                  </span>
+                  <span className="font-mono text-sm font-semibold text-muted">{metric as string}</span>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-lg font-bold">{t as string}</span>
+                  <span className="leading-relaxed text-muted">{d as string}</span>
+                </div>
+                {i === 0 && (
+                  <div className="mt-auto h-2 overflow-hidden rounded-full bg-surface-2">
+                    <div className="bg-iris h-full w-[72%] rounded-full" />
+                  </div>
+                )}
+              </Reveal>
+            );
+          })}
         </div>
       </section>
 
-      {/* Тарифи */}
-      <section className="mx-auto max-w-[1200px] px-4 pb-20 md:px-6">
-        <Reveal className="flex flex-col items-start justify-between gap-6 rounded-[28px] border border-line-2 bg-surface px-8 py-12 md:flex-row md:items-center md:px-14">
-          <div className="flex flex-col gap-2.5">
-            <h2 className="font-display text-[28px] font-bold">Три тарифи — від одного курсу до викладача</h2>
-            <p className="text-lg text-muted">Простий · Середній · Преміум. Оплата щомісяця через WayForPay, скасування в один клік.</p>
+      {/* ── Тарифи ── */}
+      <section className="mx-auto max-w-[1240px] px-3 pt-16 pb-6 md:px-6 md:pt-24">
+        <Reveal className="bg-pearl relative flex flex-col items-start justify-between gap-6 overflow-hidden rounded-(--radius-card) px-7 py-10 shadow-soft sm:px-10 md:flex-row md:items-center md:px-14 md:py-12">
+          <div className="relative flex max-w-[640px] flex-col gap-3">
+            <h2 className="font-display text-[28px] leading-tight font-extrabold sm:text-4xl">Три тарифи — від одного курсу до викладача</h2>
+            <p className="text-lg text-soft">Простий · Середній · Преміум. Оплата щомісяця через WayForPay, скасування в один клік.</p>
           </div>
-          <Link href="/pricing" className="btn-primary h-14 shrink-0 px-7 text-lg">
-            Порівняти тарифи
+          <Link href="/pricing" className="btn-primary relative h-14 shrink-0 px-7 text-base">
+            Порівняти тарифи <IconArrow size={18} />
           </Link>
         </Reveal>
       </section>

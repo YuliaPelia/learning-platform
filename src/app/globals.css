@@ -1,30 +1,40 @@
 @import "tailwindcss";
 
 /*
-  Дизайн-токени ITCodeCraft — світла «lavender»-тема з фіолетово-рожевими градієнтами.
+  Дизайн-токени ITCodeCraft — «soft UI»: світло-сірий фон, білі картки з великим радіусом і м'якими тінями,
+  чорні pill-кнопки для головних дій та активних станів, райдужні (iridescent) акценти, робот Кодик як маскот.
   Назви токенів ті самі, що й раніше: bg-ink (фон сторінки), bg-surface (картка), text-accent тощо.
 */
 @theme {
-  --color-ink: #f6f3ff;
-  --color-deep: #efeaff;
+  --color-ink: #eef0f4;
+  --color-deep: #e6e8ee;
+  --color-canvas: #f6f7f9;
   --color-surface: #ffffff;
-  --color-surface-2: #f3efff;
-  --color-line: #e7e0fb;
-  --color-line-2: #d4c9f6;
-  --color-text: #1d1747;
-  --color-soft: #463f78;
-  --color-muted: #6a6397;
-  --color-faint: #8d87b4;
-  --color-accent: #6d4aff;
-  --color-pink: #c155e8;
-  --color-good: #0f9d6b;
-  --color-amber: #b86300;
-  --color-violet: #7c5cff;
-  --color-danger: #d92d52;
+  --color-surface-2: #f3f4f7;
+  --color-line: #ebecf1;
+  --color-line-2: #dcdee6;
+  --color-text: #15151c;
+  --color-soft: #3b3d48;
+  --color-muted: #6c6f7d;
+  --color-faint: #9a9daa;
+  --color-accent: #6a4cf5;
+  --color-pink: #d9468f;
+  --color-coral: #f2735f;
+  --color-sky: #5b9cf5;
+  --color-good: #16915b;
+  --color-amber: #b5650d;
+  --color-violet: #8b6dff;
+  --color-danger: #d9364a;
 
-  --font-display: "Unbounded", system-ui, sans-serif;
-  --font-sans: "Onest", system-ui, sans-serif;
+  --radius-card: 28px;
+
+  --font-display: "Manrope", system-ui, sans-serif;
+  --font-sans: "Manrope", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --shadow-soft: 0 1px 2px rgb(21 21 40 / 0.04), 0 12px 32px -14px rgb(21 21 40 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(21 21 40 / 0.04), 0 22px 44px -18px rgb(21 21 40 / 0.2);
+  --shadow-pill: 0 1px 2px rgb(21 21 40 / 0.05), 0 6px 16px -8px rgb(21 21 40 / 0.14);
 }
 
 html {
@@ -33,19 +43,16 @@ html {
   scroll-behavior: smooth;
 }
 
-/* М'які розмиті «плями» на фоні, як на макеті */
 body {
-  background:
-    radial-gradient(60rem 40rem at 105% -10%, rgb(193 85 232 / 0.14), transparent 60%),
-    radial-gradient(50rem 40rem at -10% 40%, rgb(109 74 255 / 0.10), transparent 60%),
-    var(--color-ink);
-  background-attachment: fixed;
-}
-
-body {
+  background: var(--color-ink);
   font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
   -webkit-font-smoothing: antialiased;
 }
+
+h1, h2, h3 { letter-spacing: -0.02em; }
+
+::selection { background: rgb(106 76 245 / 0.18); }
 
 :focus-visible {
   outline: 2px solid var(--color-accent);
@@ -54,26 +61,55 @@ body {
 
 /* Власні класи-утиліти (у Tailwind v4 — через @utility, щоб їх можна було комбінувати) */
 @utility btn {
-  @apply inline-flex h-12 items-center justify-center gap-2 rounded-full px-6 font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60;
+  @apply inline-flex h-12 items-center justify-center gap-2 rounded-full px-6 font-semibold whitespace-nowrap transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50;
 }
+/* Головна дія — чорна «таблетка», як «Dashboard» / «Add New» на референсі */
 @utility btn-primary {
-  @apply btn text-white shadow-lg shadow-accent/30 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-accent/40;
-  background-image: linear-gradient(100deg, #6d4aff 0%, #9a5cf2 55%, #c155e8 100%);
+  @apply btn bg-text text-white shadow-pill hover:-translate-y-0.5 hover:bg-black hover:shadow-lift active:translate-y-0;
 }
+/* Другорядна — біла таблетка з м'якою тінню */
 @utility btn-ghost {
-  @apply btn border border-line-2 bg-white/70 text-accent hover:bg-white hover:border-accent;
+  @apply btn border border-line bg-surface text-text shadow-pill hover:-translate-y-0.5 hover:border-line-2 hover:shadow-lift active:translate-y-0;
 }
 @utility card {
-  @apply rounded-3xl border border-line bg-surface shadow-[0_10px_30px_-12px_rgb(109_74_255/0.22)];
+  @apply rounded-(--radius-card) bg-surface shadow-soft;
+}
+/* Вкладена плитка всередині картки */
+@utility tile {
+  @apply rounded-[20px] bg-surface-2;
 }
 @utility field {
-  @apply h-12 w-full rounded-2xl border border-line-2 bg-white px-4 text-text placeholder:text-faint focus:border-accent focus:ring-4 focus:ring-accent/15 focus:outline-none;
+  @apply h-12 w-full rounded-2xl border border-transparent bg-surface-2 px-4 text-text transition-colors placeholder:text-faint hover:bg-[#eef0f4] focus:border-line-2 focus:bg-white focus:ring-4 focus:ring-accent/12 focus:outline-none;
 }
 @utility label {
-  @apply mb-1.5 block text-sm font-medium text-soft;
+  @apply mb-1.5 block text-sm font-semibold text-soft;
 }
+/* Фільтри / таби: біла таблетка, активна — чорна */
+@utility chip {
+  @apply inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full border border-line bg-surface px-4 text-sm font-semibold whitespace-nowrap text-soft transition-colors hover:border-line-2 hover:text-text;
+}
+@utility chip-active {
+  @apply border-text bg-text text-white hover:border-text hover:text-white;
+}
+/* Кругла кнопка-іконка (дзвіночок, «…», «↗») */
+@utility icon-btn {
+  @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-soft shadow-pill transition hover:text-text hover:shadow-lift;
+}
+/* Райдужний градієнт — для смуг прогресу й декору */
+@utility bg-iris {
+  background-image: linear-gradient(90deg, #a991ff 0%, #e48ad8 50%, #ff9a7e 100%);
+}
+/* Насичений варіант — фон під білим текстом (обрані дні, кнопка «play») */
 @utility bg-brand {
-  background-image: linear-gradient(135deg, #6d4aff 0%, #9a5cf2 55%, #c155e8 100%);
+  background-image: linear-gradient(120deg, #5b3df0 0%, #8e4fe6 55%, #c8449f 100%);
+}
+/* Перламутрова «скляна» пляма-фон, як 3D-форма на референсі */
+@utility bg-pearl {
+  background:
+    radial-gradient(60% 70% at 20% 20%, rgb(255 205 230 / 0.9), transparent 60%),
+    radial-gradient(60% 70% at 85% 30%, rgb(196 182 255 / 0.95), transparent 60%),
+    radial-gradient(70% 70% at 60% 95%, rgb(255 196 170 / 0.85), transparent 60%),
+    #f1ecff;
 }
 
 /* ── Анімації головної ───────────────────────────────────────────── */
@@ -108,12 +144,12 @@ body {
 @utility anim-pop { animation: pop-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 @utility anim-bar { transform-origin: left; animation: bar-fill 1.4s 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
 @utility bg-brand-flow {
-  background-image: linear-gradient(120deg, #6d4aff 0%, #9a5cf2 40%, #c155e8 70%, #7c5cff 100%);
+  background-image: linear-gradient(120deg, #f3e9ff 0%, #ffe3ef 35%, #e7e4ff 65%, #ffeadf 100%);
   background-size: 220% 220%;
   animation: gradient-shift 14s ease-in-out infinite;
 }
 @utility hover-lift {
-  @apply transition-[translate,box-shadow] duration-300 hover:-translate-y-1.5 hover:shadow-[0_18px_40px_-14px_rgb(109_74_255/0.4)];
+  @apply transition-[translate,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-lift;
 }
 
 /* Поява при прокрутці (керується компонентом Reveal) */
@@ -213,11 +249,21 @@ html.has-custom-cursor [contenteditable="true"] { cursor: text !important; }
 
 /* ───────────── Кабінет учня: «скляні» панелі й робот-помічник ───────────── */
 @utility glass {
-  @apply rounded-3xl border border-white/70 bg-white/60 shadow-[0_24px_60px_-28px_rgb(109_74_255/0.45)] backdrop-blur-xl;
+  @apply rounded-(--radius-card) bg-surface shadow-soft;
 }
 @utility glass-strong {
-  @apply rounded-3xl border border-white/80 bg-white/75 shadow-[0_24px_60px_-28px_rgb(109_74_255/0.5)] backdrop-blur-2xl;
+  @apply rounded-(--radius-card) bg-white/85 shadow-lift backdrop-blur-2xl;
 }
+
+/* ── Повзунок гучності у відеоплеєрі (components/video-player.tsx) ── */
+.player-range { appearance: none; height: 4px; border-radius: 999px; background: linear-gradient(90deg, #fff var(--fill), rgb(255 255 255 / 0.3) var(--fill)); cursor: pointer; }
+.player-range::-webkit-slider-thumb { appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px rgb(255 255 255 / 0.35); }
+.player-range::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px rgb(255 255 255 / 0.35); }
+
+/* ── Власний випадний список (components/select.tsx) ── */
+@keyframes select-pop { from { opacity: 0; transform: translateY(-4px) scale(0.98); } to { opacity: 1; transform: none; } }
+.select-pop { transform-origin: top; animation: select-pop 0.14s ease-out; }
+@media (prefers-reduced-motion: reduce) { .select-pop { animation: none; } }
 
 @keyframes robot-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 @keyframes robot-shadow { 0%, 100% { transform: scaleX(1); opacity: 0.18; } 50% { transform: scaleX(0.85); opacity: 0.1; } }
@@ -227,15 +273,24 @@ html.has-custom-cursor [contenteditable="true"] { cursor: text !important; }
 @keyframes robot-core { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 
 .robot .robot-body { animation: robot-float 4.5s ease-in-out infinite; }
-.robot .robot-shadow { transform-origin: 128px 288px; animation: robot-shadow 4.5s ease-in-out infinite; }
-.robot .robot-eyes { transform-origin: 123px 100px; animation: robot-blink 5s infinite; }
+.robot .robot-shadow { transform-origin: 147px 300px; animation: robot-shadow 4.5s ease-in-out infinite; }
+.robot .robot-eyes { transform-origin: 162px 86px; animation: robot-blink 5s infinite; }
 .robot .robot-tablet { animation: robot-tablet 3s ease-in-out infinite; }
 .robot .robot-bar { transform-box: fill-box; transform-origin: bottom; animation: robot-bar 2.4s ease-in-out infinite; }
 .robot .robot-bar.b2 { animation-delay: 0.3s; }
 .robot .robot-bar.b3 { animation-delay: 0.6s; }
 .robot .robot-bar.b4 { animation-delay: 0.9s; }
 .robot .robot-core { animation: robot-core 2s ease-in-out infinite; }
+.robot .robot-drift { animation: robot-float 3.6s ease-in-out infinite; }
+.robot .robot-drift.d2 { animation-duration: 4.2s; animation-delay: 0.8s; }
 
 @media (prefers-reduced-motion: reduce) {
   .robot *, .robot .robot-body { animation: none !important; }
 }
+
+/* ── Маскот Кодик (components/mascot.tsx) ── */
+@keyframes mascot-float { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-10px) rotate(-1deg); } }
+@utility anim-mascot { animation: mascot-float 6s ease-in-out infinite; }
+
+/* Тонкий скролбар у стилі soft UI */
+* { scrollbar-width: thin; scrollbar-color: #cfd2db transparent; }

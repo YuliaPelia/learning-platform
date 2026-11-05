@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Mascot } from "@/components/mascot";
 import { notFound } from "next/navigation";
 import { IconCheck, IconLock, IconPlay } from "@/components/icons";
 import { Notice } from "@/components/cabinet-shell";
@@ -26,19 +27,22 @@ export default async function CoursePage({ params, searchParams }: PageProps<"/c
 
   return (
     <PublicShell>
-      <div className="mx-auto flex max-w-[960px] flex-col gap-8 px-4 py-14 md:px-6">
+      <div className="mx-auto flex max-w-[1040px] flex-col gap-5 px-3 pt-6 pb-14 md:px-6">
         {sp.finished && <Notice tone="success">Ти пройшов(-ла) всі уроки курсу! 🎉 Скоро тут з’являться нові модулі.</Notice>}
         {course.coverUrl && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={mediaSrc(course.coverUrl)} alt="" className="aspect-[16/9] max-h-[420px] w-full rounded-3xl object-cover" />
+          <img src={mediaSrc(course.coverUrl)} alt="" className="aspect-[16/9] max-h-[420px] w-full rounded-(--radius-card) object-cover shadow-soft" />
         )}
-        <div className="flex flex-col gap-4">
-          <span className="text-muted">
-            {course.ageFrom}–{course.ageTo} років · {items.length} уроків · перші {FREE_LESSONS} безкоштовно
-          </span>
-          <h1 className="font-display text-4xl font-bold md:text-5xl">{course.title}</h1>
-          <p className="max-w-[640px] text-xl leading-relaxed text-soft">{course.description}</p>
-          <div className="mt-2 flex flex-wrap gap-3">
+        <div className="bg-pearl relative flex flex-col gap-4 overflow-hidden rounded-(--radius-card) p-7 shadow-soft sm:p-10 md:min-h-[340px] md:pr-[300px]">
+          <Mascot className="absolute right-0 bottom-0 hidden h-[300px] w-[340px] md:block" sizes="340px" />
+          <div className="relative flex flex-wrap gap-2 text-sm font-semibold">
+            <span className="rounded-full bg-white/80 px-3 py-1 text-soft">{course.ageFrom}–{course.ageTo} років</span>
+            <span className="rounded-full bg-white/80 px-3 py-1 text-soft">{items.length} уроків</span>
+            <span className="rounded-full bg-text px-3 py-1 text-white">перші {FREE_LESSONS} безкоштовно</span>
+          </div>
+          <h1 className="relative font-display text-4xl font-extrabold md:text-[56px] md:leading-[1.05]">{course.title}</h1>
+          <p className="relative max-w-[600px] text-lg leading-relaxed text-soft md:text-xl">{course.description}</p>
+          <div className="relative mt-2 flex flex-wrap gap-3">
             {course.status !== "published" ? (
               <span className="btn-ghost cursor-default">Курс готується — скоро відкриємо</span>
             ) : user?.role === "student" ? (
@@ -59,7 +63,7 @@ export default async function CoursePage({ params, searchParams }: PageProps<"/c
         </div>
 
         {items.length > 0 && (
-          <ol className="flex flex-col gap-3">
+          <ol className="flex flex-col gap-2.5">
             {items.map(({ lesson, done, access }) => {
               // Учень відкриває урок кліком на картку — якщо урок йому доступний
               const href = user?.role === "student" && access === "ok" ? `/learn/${course.slug}/${lesson.order}` : null;
@@ -68,13 +72,13 @@ export default async function CoursePage({ params, searchParams }: PageProps<"/c
                 <>
                 <span
                   className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-mono font-bold ${
-                    done ? "bg-accent text-white" : "bg-surface-2 text-soft"
+                    done ? "bg-text text-white" : "bg-surface-2 text-soft"
                   }`}
                 >
                   {done ? <IconCheck size={18} /> : lesson.order}
                 </span>
                 <div className="flex min-w-0 flex-1 basis-[calc(100%-4.5rem)] flex-col gap-1 sm:basis-auto">
-                  <span className="text-lg font-semibold">{lesson.title}</span>
+                  <span className="text-lg font-bold">{lesson.title}</span>
                   <span className="text-muted">{lesson.summary}</span>
                 </div>
                 {lesson.order <= FREE_LESSONS ? (

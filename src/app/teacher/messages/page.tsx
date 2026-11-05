@@ -31,7 +31,7 @@ export default async function TeacherMessagesPage() {
       )}
       <div className="flex flex-col gap-3">
         {threads.map((t) => (
-          <Link key={t.id} href={`/teacher/submissions/${t.id}`} className="card flex flex-col justify-between gap-3 px-6 py-5 hover:border-accent sm:flex-row sm:items-center">
+          <Link key={t.id} href={`/teacher/submissions/${t.id}`} className="card hover-lift flex flex-col justify-between gap-3 px-6 py-5 sm:flex-row sm:items-center">
             <div className="flex min-w-0 flex-col gap-1">
               <span className="font-bold">
                 {t.user.name} · {t.homework.lesson.course.title}, урок {t.homework.lesson.order}: {t.homework.lesson.title}

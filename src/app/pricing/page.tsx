@@ -31,10 +31,10 @@ export default async function PricingPage({ searchParams }: PageProps<"/pricing"
     <PublicShell>
       <div className="mx-auto max-w-[1200px] px-4 md:px-6">
         <section className="flex flex-col items-center gap-4.5 pt-16 pb-10 text-center">
-          <h1 className="font-display text-4xl font-bold tracking-tight md:text-5xl">Оберіть тариф</h1>
+          <h1 className="font-display text-4xl font-extrabold tracking-tight md:text-[56px]">Оберіть тариф</h1>
           <p className="text-xl text-soft">Оплата щомісяця. Скасувати можна будь-коли в кабінеті батьків.</p>
-          <div className="flex min-h-11 items-center gap-2.5 rounded-full border border-accent bg-good/10 px-4.5 font-semibold">
-            <IconGift size={18} className="text-accent" />
+          <div className="flex min-h-11 items-center gap-2.5 rounded-full bg-white py-1.5 pr-5 pl-1.5 font-semibold shadow-pill">
+            <span className="bg-iris flex h-8 w-8 items-center justify-center rounded-full text-white"><IconGift size={16} /></span>
             Перші 2 уроки будь-якого курсу — безкоштовно, без картки
           </div>
         </section>
@@ -49,8 +49,8 @@ export default async function PricingPage({ searchParams }: PageProps<"/pricing"
         />
 
         <section className="flex flex-col gap-6 pt-16 pb-14">
-          <h2 className="font-display text-3xl font-bold">Часті питання</h2>
-          <div className="grid gap-5 md:grid-cols-2">
+          <h2 className="font-display text-3xl font-extrabold">Часті питання</h2>
+          <div className="grid gap-4 md:grid-cols-2">
             {FAQ.map(([q, a]) => (
               <div key={q} className="card flex flex-col gap-2.5 px-7 py-6">
                 <h3 className="text-[19px] font-bold">{q}</h3>

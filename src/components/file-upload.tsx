@@ -91,7 +91,7 @@ export function FileUpload({
       </div>
       {busy && (
         <div role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress ?? 0} className="h-2 w-full max-w-[420px] overflow-hidden rounded-full bg-line">
-          <div className="h-full bg-accent transition-[width]" style={{ width: `${progress}%` }} />
+          <div className="bg-iris h-full transition-[width]" style={{ width: `${progress}%` }} />
         </div>
       )}
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}

@@ -28,18 +28,18 @@ export function CourseCatalog({ groups }: { groups: CatalogGroup[] }) {
     <div className="flex flex-col gap-9">
       <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
         <div className="flex flex-col gap-2.5">
-          <h2 className="font-display text-3xl font-bold sm:text-4xl">Курси</h2>
+          <h2 className="font-display text-3xl font-extrabold sm:text-[42px]">Курси</h2>
           <p className="text-lg text-muted">Навчання лише за програмою ITCodeCraft — усе всередині платформи</p>
         </div>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Фільтр курсів">
+        <div className="flex flex-wrap gap-1 self-start rounded-full bg-white p-1 shadow-soft md:self-auto" role="group" aria-label="Фільтр курсів">
           {FILTERS.map((f) => (
             <button
               key={f.id}
               type="button"
               onClick={() => setFilter(f.id)}
               aria-pressed={filter === f.id}
-              className={`h-11 rounded-xl border px-4 font-semibold ${
-                filter === f.id ? "border-accent bg-accent text-white" : "border-line-2 text-soft hover:bg-surface-2"
+              className={`h-10 rounded-full px-5 text-sm font-semibold transition-colors ${
+                filter === f.id ? "bg-text text-white shadow-pill" : "text-soft hover:bg-surface-2 hover:text-text"
               }`}
             >
               {f.label}
@@ -47,12 +47,12 @@ export function CourseCatalog({ groups }: { groups: CatalogGroup[] }) {
           ))}
         </div>
       </div>
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {shown.map((g) => (
-          <div key={g.id} className="card flex min-h-[236px] min-w-0 flex-col gap-4 p-5 sm:p-7">
+          <div key={g.id} className="card hover-lift flex min-h-[236px] min-w-0 flex-col gap-4 p-6 sm:p-7">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-[22px] font-bold">{g.title}</h3>
-              <span className="shrink-0 rounded-full bg-line px-3 py-1 text-[13px] whitespace-nowrap text-soft">{g.age}</span>
+              <h3 className="text-[21px] font-bold">{g.title}</h3>
+              <span className="shrink-0 rounded-full bg-surface-2 px-3 py-1 text-[13px] font-semibold whitespace-nowrap text-soft">{g.age}</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {g.courses.map((c) =>
@@ -60,14 +60,14 @@ export function CourseCatalog({ groups }: { groups: CatalogGroup[] }) {
                   <Link
                     key={c.slug}
                     href={`/courses/${c.slug}`}
-                    className="flex h-9 items-center rounded-[10px] border border-accent/60 px-3 text-[15px] hover:bg-accent hover:text-white"
+                    className="flex h-9 items-center rounded-full border border-line-2 bg-white px-3.5 text-sm font-semibold transition-colors hover:border-text hover:bg-text hover:text-white"
                   >
                     {c.title}
                   </Link>
                 ) : (
-                  <span key={c.slug} className="flex h-9 items-center gap-1.5 rounded-[10px] border border-line-2 px-3 text-[15px] text-muted">
+                  <span key={c.slug} className="flex h-9 items-center gap-1.5 rounded-full bg-surface-2 px-3.5 text-sm font-semibold text-faint">
                     {c.title}
-                    <span className="text-[11px] text-amber">скоро</span>
+                    <span className="rounded-full bg-white px-1.5 text-[10px] font-bold tracking-wide text-amber uppercase">скоро</span>
                   </span>
                 ),
               )}

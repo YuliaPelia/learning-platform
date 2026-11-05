@@ -2,7 +2,17 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { addSlot, addTask, saveStudyProfile } from "@/actions/planner";
-import { PRIORITIES, SLOT_KINDS, WEEKDAYS, WEEKDAYS_FULL } from "@/lib/planner";
+import { DatePicker } from "@/components/date-picker";
+import { Select, type SelectOption } from "@/components/select";
+import { TimePicker } from "@/components/time-picker";
+import { PRIORITIES, SLOT_KINDS, WEEKDAYS, WEEKDAYS_FULL, kyivDay } from "@/lib/planner";
+
+const PRIORITY_DOT: Record<string, string> = { high: "bg-danger", normal: "bg-accent", low: "bg-faint" };
+const KIND_DOT: Record<string, string> = { lesson: "bg-accent", homework: "bg-pink", practice: "bg-sky-500", rest: "bg-emerald-500", other: "bg-faint" };
+
+const PRIORITY_OPTIONS: SelectOption[] = Object.entries(PRIORITIES).map(([value, label]) => ({ value, label, dot: PRIORITY_DOT[value] }));
+const KIND_OPTIONS: SelectOption[] = Object.entries(SLOT_KINDS).map(([value, label]) => ({ value, label, dot: KIND_DOT[value] }));
+const DAY_OPTIONS: SelectOption[] = WEEKDAYS_FULL.map((label, i) => ({ value: String(i), label }));
 
 function Alert({ message }: { message?: string }) {
   if (!message) return null;
@@ -37,15 +47,11 @@ export function AddTaskForm() {
       <div className="grid grid-cols-3 gap-2">
         <label className="flex flex-col gap-1 text-xs font-medium text-muted">
           Дедлайн
-          <input name="dueDate" type="date" className="field h-10 px-3 text-sm" defaultValue={state?.values?.dueDate} />
+          <DatePicker name="dueDate" className="h-10 px-3 text-sm" placeholder="Без дедлайну" min={kyivDay()} defaultValue={state?.values?.dueDate} />
         </label>
         <label className="flex flex-col gap-1 text-xs font-medium text-muted">
           Пріоритет
-          <select name="priority" className="field h-10 px-3 text-sm" defaultValue={state?.values?.priority ?? "normal"}>
-            {Object.entries(PRIORITIES).map(([v, l]) => (
-              <option key={v} value={v}>{l}</option>
-            ))}
-          </select>
+          <Select name="priority" options={PRIORITY_OPTIONS} className="h-10 px-3 text-sm" defaultValue={state?.values?.priority ?? "normal"} />
         </label>
         <label className="flex flex-col gap-1 text-xs font-medium text-muted">
           Хвилин
@@ -68,15 +74,11 @@ export function AddSlotForm({ defaultDay }: { defaultDay: number }) {
       </label>
       <label className="flex flex-col gap-1 text-xs font-medium text-muted">
         День
-        <select name="weekday" className="field h-11 text-sm" defaultValue={state?.values?.weekday ?? String(defaultDay)}>
-          {WEEKDAYS_FULL.map((d, i) => (
-            <option key={d} value={i}>{d}</option>
-          ))}
-        </select>
+        <Select name="weekday" options={DAY_OPTIONS} className="h-11 text-sm" defaultValue={state?.values?.weekday ?? String(defaultDay)} />
       </label>
       <label className="flex flex-col gap-1 text-xs font-medium text-muted">
         Початок
-        <input name="start" type="time" className="field h-11 text-sm" required defaultValue={state?.values?.start ?? "17:00"} />
+        <TimePicker name="start" className="h-11 text-sm" defaultValue={state?.values?.start ?? "17:00"} />
       </label>
       <label className="flex flex-col gap-1 text-xs font-medium text-muted">
         Хвилин
@@ -84,11 +86,7 @@ export function AddSlotForm({ defaultDay }: { defaultDay: number }) {
       </label>
       <label className="flex flex-col gap-1 text-xs font-medium text-muted">
         Тип
-        <select name="kind" className="field h-11 text-sm" defaultValue={state?.values?.kind ?? "lesson"}>
-          {Object.entries(SLOT_KINDS).map(([v, l]) => (
-            <option key={v} value={v}>{l}</option>
-          ))}
-        </select>
+        <Select name="kind" options={KIND_OPTIONS} className="h-11 text-sm" defaultValue={state?.values?.kind ?? "lesson"} />
       </label>
       <button className="btn-primary h-11 px-5" disabled={pending}>{pending ? "Додаємо…" : "Додати"}</button>
       <div className="sm:col-span-2 lg:col-span-6">
@@ -110,7 +108,7 @@ export function StudyProfileForm({ profile }: { profile: Profile }) {
           {WEEKDAYS.map((d, i) => (
             <label key={d} className="cursor-pointer">
               <input type="checkbox" name="studyDays" value={i} defaultChecked={profile.studyDays.includes(i)} className="peer sr-only" />
-              <span className="flex h-10 w-11 items-center justify-center rounded-xl border border-line-2 bg-white/70 text-sm font-semibold text-muted transition peer-checked:border-accent peer-checked:bg-accent peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
+              <span className="flex h-10 w-11 items-center justify-center rounded-full border border-line bg-white text-sm font-semibold text-muted transition peer-checked:border-text peer-checked:bg-text peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
                 {d}
               </span>
             </label>

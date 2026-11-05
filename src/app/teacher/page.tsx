@@ -34,7 +34,7 @@ export default async function TeacherPage() {
             <span className="text-sm text-muted">Здано {formatShortDate(hw.submittedAt)}</span>
           </div>
           <p className="text-soft">{hw.homework.task}</p>
-          <pre className="overflow-x-auto rounded-2xl bg-ink p-4 font-mono text-sm text-soft">{hw.answer}</pre>
+          <pre className="overflow-x-auto rounded-2xl bg-text p-4 font-mono text-sm text-[#e6e6ef]">{hw.answer}</pre>
           <form action={reviewHomework} className="grid gap-3 md:grid-cols-[140px_1fr_auto] md:items-end">
             <input type="hidden" name="homeworkId" value={hw.id} />
             <div>

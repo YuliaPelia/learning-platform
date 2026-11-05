@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { logout } from "@/actions/auth";
 import { Logo } from "@/components/site-chrome";
+import { NavPills } from "@/components/nav-pills";
 
 export { Notice } from "@/components/notice";
 
@@ -18,37 +18,44 @@ export function CabinetShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
-      <aside className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-3 border-b border-line bg-deep px-4 py-4 lg:flex lg:flex-col lg:items-stretch lg:gap-7 lg:px-5 lg:py-6 lg:sticky lg:top-0 lg:h-screen lg:w-[272px] lg:shrink-0 lg:border-r lg:border-b-0">
-        <div className="px-0 lg:px-2">
-          <Logo small />
-        </div>
-        <nav className="col-span-2 row-start-2 -mx-4 flex flex-row gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:flex-col lg:gap-1 lg:overflow-visible lg:px-0 lg:pb-0 [&::-webkit-scrollbar]:hidden" aria-label="Меню кабінету">
-          {nav.map((n) => (
-            <Link key={n.href} href={n.href} className="flex h-10 shrink-0 items-center rounded-full border border-line bg-white/70 px-4 text-sm font-semibold whitespace-nowrap text-muted hover:bg-surface-2 hover:text-text lg:h-11 lg:rounded-[10px] lg:border-0 lg:bg-transparent lg:px-3.5 lg:text-base">
-              {n.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="col-start-2 row-start-1 flex items-center gap-2 rounded-2xl bg-surface-2 p-2 lg:mt-auto lg:gap-3 lg:p-3.5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/10 font-bold text-accent">
-            {user.name.slice(0, 1).toUpperCase()}
+    <div className="min-h-screen bg-ink p-0 lg:p-3">
+      {/* «Полотно» застосунку: велика заокруглена світла панель на сірому фоні, як на референсі */}
+      <div className="flex min-h-screen flex-col bg-canvas lg:min-h-[calc(100vh-1.5rem)] lg:rounded-[40px] lg:shadow-soft">
+        <header className="sticky top-0 z-30 border-b border-line/70 bg-canvas/85 backdrop-blur-xl lg:static lg:rounded-t-[40px] lg:border-0 lg:bg-transparent lg:backdrop-blur-none">
+          <div className="flex flex-col gap-3 px-4 pt-3.5 pb-2.5 md:px-8 lg:flex-row lg:items-center lg:gap-6 lg:pt-6 lg:pb-2">
+            <div className="flex items-center justify-between gap-3 lg:contents">
+              <div className="flex items-center gap-3 lg:w-[200px] lg:shrink-0">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white font-mono text-sm font-bold shadow-pill" aria-hidden>
+                  {"</>"}
+                </span>
+                <Logo small />
+              </div>
+              <div className="flex items-center gap-2 lg:order-3 lg:ml-auto">
+                <div className="flex items-center gap-2.5 rounded-full border border-line bg-white py-1 pr-1 pl-1 shadow-pill sm:pr-4">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-iris font-bold text-white" aria-hidden>
+                    {user.name.slice(0, 1).toUpperCase()}
+                  </span>
+                  <span className="hidden flex-col leading-tight sm:flex">
+                    <span className="max-w-[140px] truncate text-sm font-bold">{user.name}</span>
+                    <span className="text-xs text-muted">{roleLabel}</span>
+                  </span>
+                </div>
+                <form action={logout}>
+                  <button className="icon-btn hover:text-danger" aria-label="Вийти з кабінету" title="Вийти">
+                    <svg aria-hidden viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4.5 w-4.5">
+                      <path d="M8 4H5.5A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8M12 6.5 15.5 10 12 13.5M15.5 10H8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                </form>
+              </div>
+            </div>
+            <div className="min-w-0 rounded-full lg:order-2 lg:bg-surface-2/80 lg:p-1">
+              <NavPills nav={nav} label="Меню кабінету" />
+            </div>
           </div>
-          <div className="hidden min-w-0 flex-1 flex-col lg:flex">
-            <span className="truncate font-semibold">{user.name}</span>
-            <span className="text-[13px] text-muted">{roleLabel}</span>
-          </div>
-          <form action={logout}>
-            <button className="group relative inline-flex cursor-pointer items-center gap-1.5 py-1 text-sm text-muted transition-colors duration-200 hover:text-accent focus-visible:text-accent after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-accent after:transition-transform after:duration-300 hover:after:scale-x-100 focus-visible:after:scale-x-100" aria-label="Вийти з кабінету">
-              Вийти
-              <svg aria-hidden viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1 group-focus-visible:translate-x-1">
-                <path d="M4 10h11m0 0-4-4m4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </form>
-        </div>
-      </aside>
-      <main className="flex min-w-0 flex-1 flex-col gap-7 px-4 py-8 md:px-12 md:py-9">{children}</main>
+        </header>
+        <main className="flex min-w-0 flex-1 flex-col gap-6 px-4 pt-5 pb-10 md:px-8 md:pt-6">{children}</main>
+      </div>
     </div>
   );
 }
@@ -57,8 +64,8 @@ export function StatusBadge({ tone, children }: { tone: "good" | "wait" | "muted
   const cls = {
     good: "bg-good/10 text-good",
     wait: "bg-amber/15 text-amber",
-    muted: "bg-surface-2 text-muted",
+    muted: "bg-surface-2 text-soft",
     bad: "bg-danger/10 text-danger",
   }[tone];
-  return <span className={`inline-flex h-7.5 shrink-0 items-center rounded-full px-3 text-[13px] font-bold ${cls}`}>{children}</span>;
+  return <span className={`inline-flex h-7.5 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-bold whitespace-nowrap ${cls}`}>{children}</span>;
 }

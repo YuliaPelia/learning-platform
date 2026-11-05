@@ -1,13 +1,11 @@
 "use client";
 
-import { createContext, useContext, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { VideoPlayer } from "@/components/video-player";
 
 /** Яку частку відео треба переглянути, щоб урок можна було позначити пройденим. */
 export const WATCH_RATIO = 0.9;
-/** Допуск для перемотування вперед (секунди) — щоб не «смикало» через неточність timeupdate. */
-const SEEK_SLACK = 2;
-
-type Gate = { watched: boolean; percent: number; setPercent: (p: number) => void; required: boolean };
+type Gate = { watched: boolean; percent: number; setPercent: Dispatch<SetStateAction<number>>; required: boolean };
 const WatchContext = createContext<Gate>({ watched: true, percent: 100, setPercent: () => {}, required: false });
 
 /**
@@ -20,35 +18,15 @@ export function WatchGateProvider({ required, children }: { required: boolean; c
   return <WatchContext.Provider value={{ watched, percent, setPercent, required }}>{children}</WatchContext.Provider>;
 }
 
-/** Відео уроку: рахує переглянуте й не дає перемотати вперед непереглянуту частину. */
-export function GatedVideo(props: { src: string; poster?: string }) {
+/** Відео уроку у власному плеєрі: рахує переглянуте й не дає перемотати вперед непереглянуту частину. */
+export function GatedVideo(props: { src: string; poster?: string; title?: string }) {
   const gate = useContext(WatchContext);
-  const maxWatched = useRef(0);
-
   return (
-    <video
-      src={props.src}
-      poster={props.poster}
-      controls
-      controlsList="nodownload noplaybackrate"
-      disablePictureInPicture
-      playsInline
-      preload="metadata"
-      className="h-full w-full"
-      onTimeUpdate={(e) => {
-        const v = e.currentTarget;
-        // Рахуємо лише «чесний» перегляд: стрибок далі за переглянуте не зараховується
-        if (v.currentTime <= maxWatched.current + SEEK_SLACK) maxWatched.current = Math.max(maxWatched.current, v.currentTime);
-        if (v.duration) gate.setPercent(Math.min(100, Math.round((maxWatched.current / v.duration) * 100)));
-      }}
-      onSeeking={(e) => {
-        const v = e.currentTarget;
-        if (gate.required && v.currentTime > maxWatched.current + SEEK_SLACK) v.currentTime = maxWatched.current;
-      }}
-      onEnded={(e) => {
-        const v = e.currentTarget;
-        if (maxWatched.current >= v.duration * WATCH_RATIO - SEEK_SLACK) gate.setPercent(100);
-      }}
+    <VideoPlayer
+      {...props}
+      limitSeek={gate.required}
+      onWatched={(ratio) => gate.setPercent(Math.min(100, Math.round(ratio * 100)))}
+      onEnded={() => gate.setPercent((p) => (p >= WATCH_RATIO * 100 - 5 ? 100 : p))}
     />
   );
 }

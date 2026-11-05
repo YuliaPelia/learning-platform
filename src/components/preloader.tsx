@@ -50,14 +50,14 @@ export function Preloader() {
       ref={ref}
       role="status"
       aria-live="polite"
-      className="preloader-failsafe bg-brand-flow fixed inset-0 z-[100] flex flex-col items-center justify-center gap-6 text-white transition-opacity duration-500 [&.is-done]:pointer-events-none [&.is-done]:opacity-0"
+      className="preloader-failsafe fixed inset-0 z-[100] flex flex-col items-center justify-center gap-6 bg-canvas text-text transition-opacity duration-500 [&.is-done]:pointer-events-none [&.is-done]:opacity-0"
     >
-      <div className="anim-pulse-soft flex h-20 w-20 items-center justify-center rounded-3xl bg-white font-display text-3xl font-bold text-accent shadow-2xl shadow-[#2d1a8c]/40">
+      <div className="anim-pulse-soft flex h-20 w-20 items-center justify-center rounded-full bg-text font-mono text-2xl font-bold text-white shadow-lift">
         {"</>"}
       </div>
-      <div className="font-display text-2xl font-bold tracking-tight">ITCodeCraft</div>
-      <div className="h-1.5 w-44 overflow-hidden rounded-full bg-white/25" aria-hidden>
-        <div className="anim-load-bar h-full w-1/3 rounded-full bg-white" />
+      <div className="font-display text-2xl font-extrabold tracking-tight">IT<span className="text-accent">Code</span>Craft</div>
+      <div className="h-1.5 w-44 overflow-hidden rounded-full bg-line-2/70" aria-hidden>
+        <div className="anim-load-bar bg-iris h-full w-1/3 rounded-full" />
       </div>
       <span className="sr-only">Завантаження…</span>
     </div>

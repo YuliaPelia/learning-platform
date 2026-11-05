@@ -24,7 +24,7 @@ export function ChildPlanner({ name, slots, tasks, minutesPerDay }: { name: stri
       ) : (
         <ol className="grid gap-2 sm:grid-cols-4 lg:grid-cols-7">
           {WEEKDAYS.map((d, day) => (
-            <li key={d} className={`flex flex-col gap-1.5 rounded-2xl p-3 ${day === today ? "bg-accent/8 ring-1 ring-accent/30" : "bg-ink"}`}>
+            <li key={d} className={`flex flex-col gap-1.5 rounded-2xl p-3 ${day === today ? "bg-white ring-1 ring-text shadow-pill" : "bg-surface-2"}`}>
               <span className="flex justify-between text-sm font-bold">
                 {d} <span className="font-normal text-muted">{perDay[day] ? `${perDay[day]} хв` : "—"}</span>
               </span>

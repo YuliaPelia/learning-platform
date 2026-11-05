@@ -53,7 +53,7 @@ export default async function TeacherSubmissionPage({ params }: PageProps<"/teac
         {sub.answer ? (
           <>
             <h3 className="font-bold">Відповідь учня · здано {formatShortDate(sub.submittedAt)}</h3>
-            <pre className="overflow-x-auto rounded-2xl bg-ink p-4 font-mono text-sm text-soft">{sub.answer}</pre>
+            <pre className="overflow-x-auto rounded-2xl bg-text p-4 font-mono text-sm text-[#e6e6ef]">{sub.answer}</pre>
           </>
         ) : (
           <p className="text-muted">Учень ще не здав відповідь.</p>

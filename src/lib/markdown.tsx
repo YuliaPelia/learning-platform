@@ -39,7 +39,7 @@ export function Markdown({ source }: { source: string }) {
       while (i < lines.length && !lines[i].startsWith("```")) code.push(lines[i++]);
       i++;
       out.push(
-        <pre key={`c${i}`} className="overflow-x-auto rounded-2xl bg-ink p-5 font-mono text-[15px] leading-relaxed text-soft">
+        <pre key={`c${i}`} className="overflow-x-auto rounded-[20px] bg-text p-5 font-mono text-[15px] leading-relaxed text-[#e6e6ef] shadow-pill">
           <code>{code.join("\n")}</code>
         </pre>,
       );

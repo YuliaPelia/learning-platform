@@ -26,21 +26,21 @@ export function PricingClient({ plans, features, initialPlan, viewer, childrenLi
 
   return (
     <>
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         {plans.map((p, i) => {
           const selected = p.id === planId;
           return (
             <div
               key={p.id}
-              className={`flex flex-col gap-4.5 rounded-3xl px-8 pt-7 pb-9 ${selected ? "border-2 border-accent bg-surface-2" : "border border-line bg-surface"}`}
+              className={`relative flex flex-col gap-4.5 overflow-hidden rounded-(--radius-card) px-8 pt-7 pb-9 transition-shadow ${selected ? "bg-surface shadow-lift ring-2 ring-text" : "bg-surface shadow-soft hover:shadow-lift"}`}
             >
               <div className="h-7">
-                {p.popular && <span className="rounded-full bg-amber/15 px-3 py-1 text-[13px] font-bold text-amber">Найпопулярніший</span>}
+                {p.popular && <span className="bg-iris rounded-full px-3 py-1 text-[13px] font-bold text-white">Найпопулярніший</span>}
               </div>
-              <h2 className="font-display text-[26px] font-bold">{p.name}</h2>
+              <h2 className="font-display text-[26px] font-extrabold">{p.name}</h2>
               <p className="min-h-12 leading-relaxed text-muted">{p.description}</p>
               <div className="flex items-baseline gap-2">
-                <span className="font-display text-[44px] font-bold">{p.price}</span>
+                <span className="font-display text-[48px] leading-none font-extrabold tracking-tight">{p.price}</span>
                 <span className="text-[17px] text-muted">грн / місяць</span>
               </div>
               <button
@@ -54,14 +54,14 @@ export function PricingClient({ plans, features, initialPlan, viewer, childrenLi
               <div className="h-px bg-line" />
               <ul className="flex flex-col gap-3.5">
                 <li className="flex gap-3">
-                  <IconCheck className="mt-0.5 shrink-0 text-accent" />
+                  <IconCheck className="mt-0.5 shrink-0 text-good" />
                   <span>{p.allCourses ? "Усі курси + новинки раніше за всіх" : "1 курс на вибір"}</span>
                 </li>
                 {features.map(([text, ...flags]) => {
                   const on = flags[i];
                   return (
                     <li key={text} className="flex gap-3">
-                      {on ? <IconCheck className="mt-0.5 shrink-0 text-accent" /> : <IconX className="mt-0.5 shrink-0 text-faint" />}
+                      {on ? <IconCheck className="mt-0.5 shrink-0 text-good" /> : <IconX className="mt-0.5 shrink-0 text-faint" />}
                       <span className={on ? "" : "text-faint"}>
                         {text}
                         <span className="sr-only">{on ? " — є" : " — немає"}</span>
@@ -75,13 +75,13 @@ export function PricingClient({ plans, features, initialPlan, viewer, childrenLi
         })}
       </div>
 
-      <section className="mt-12 grid gap-14 rounded-[28px] border border-line-2 bg-surface px-6 py-10 md:px-12 lg:grid-cols-2" aria-labelledby="checkout-title">
+      <section className="card mt-4 grid gap-14 px-6 py-10 md:px-12 lg:grid-cols-2" aria-labelledby="checkout-title">
         <div className="flex flex-col gap-4.5">
-          <h2 id="checkout-title" className="font-display text-2xl font-bold">Оформлення підписки</h2>
+          <h2 id="checkout-title" className="font-display text-2xl font-extrabold">Оформлення підписки</h2>
           <Row label="Тариф" value={plan.name} />
           <Row label="Сума щомісяця" value={`${plan.price} грн`} />
           <Row label="Наступне списання" value="через 1 місяць" />
-          <p className="rounded-xl bg-ink px-4 py-3.5 text-[15px] leading-relaxed text-muted">
+          <p className="rounded-2xl bg-surface-2 px-4 py-3.5 text-[15px] leading-relaxed text-muted">
             За 3 дні до списання надішлемо нагадування на пошту. Скасування — в кабінеті батьків, одним кліком.
           </p>
         </div>
@@ -146,7 +146,7 @@ export function PricingClient({ plans, features, initialPlan, viewer, childrenLi
                 name="consentOffer"
                 checked={consentOffer}
                 onChange={(e) => setConsentOffer(e.target.checked)}
-                className="mt-1 h-5 w-5 shrink-0 accent-accent"
+                className="mt-1 h-5 w-5 shrink-0 accent-[var(--color-text)]"
               />
               <span>
                 Я ознайомився(-лась) і приймаю умови{" "}
@@ -165,7 +165,7 @@ export function PricingClient({ plans, features, initialPlan, viewer, childrenLi
                 name="consentImmediate"
                 checked={consentImmediate}
                 onChange={(e) => setConsentImmediate(e.target.checked)}
-                className="mt-1 h-5 w-5 shrink-0 accent-accent"
+                className="mt-1 h-5 w-5 shrink-0 accent-[var(--color-text)]"
               />
               <span>
                 Погоджуюсь на негайний доступ до уроків після оплати й розумію, що втрачаю право на відмову від договору щодо вже наданого
