@@ -52,7 +52,7 @@ export default async function LessonPage({ params, searchParams }: PageProps<"/l
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-30 px-3 pt-3 md:px-6">
         <div className="mx-auto flex h-16 max-w-[1240px] items-center justify-between gap-4 rounded-full border border-white/80 bg-white/85 pr-2 pl-5 shadow-soft backdrop-blur-xl md:pl-7">
-          <Logo small />
+          <Logo small mark />
           <div className="hidden min-w-0 flex-1 items-center justify-center gap-3 md:flex" aria-label={`Прогрес курсу: ${doneCount} з ${state.items.length} уроків`}>
             <span className="truncate text-sm font-semibold text-soft">{state.course.title}</span>
             <div className="h-2 w-40 overflow-hidden rounded-full bg-surface-2" aria-hidden>

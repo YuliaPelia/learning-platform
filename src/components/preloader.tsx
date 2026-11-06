@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { LogoMark } from "@/components/logo-mark";
 
 const MIN_VISIBLE_MS = 700; // щоб прелоадер не «блимав» на швидкому з'єднанні
 const MAX_VISIBLE_MS = 4000; // страховка, якщо подія load не прийшла
@@ -52,8 +53,8 @@ export function Preloader() {
       aria-live="polite"
       className="preloader-failsafe fixed inset-0 z-[100] flex flex-col items-center justify-center gap-6 bg-canvas text-text transition-opacity duration-500 [&.is-done]:pointer-events-none [&.is-done]:opacity-0"
     >
-      <div className="anim-pulse-soft flex h-20 w-20 items-center justify-center rounded-full bg-text font-mono text-2xl font-bold text-white shadow-lift">
-        {"</>"}
+      <div className="anim-pulse-soft rounded-full shadow-lift">
+        <LogoMark size={80} />
       </div>
       <div className="font-display text-2xl font-extrabold tracking-tight">IT<span className="text-accent">Code</span>Craft</div>
       <div className="h-1.5 w-44 overflow-hidden rounded-full bg-line-2/70" aria-hidden>

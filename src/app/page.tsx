@@ -1,11 +1,15 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
 import Link from "next/link";
 import { prisma } from "@/db";
 import { CourseCatalog, type CatalogGroup } from "@/components/course-catalog";
 import { IconArrow, IconCheck, IconClock, IconFlame, IconLock, IconStar } from "@/components/icons";
 import { Mascot, MascotAvatar } from "@/components/mascot";
+import { PlatformGuide } from "@/components/platform-guide";
 import { Reveal } from "@/components/reveal";
 import { PublicShell } from "@/components/site-chrome";
 import { CATEGORY_LABELS } from "@/lib/format";
+import { GUIDE, GUIDE_IMAGE_EXTENSIONS } from "@/lib/guide";
 
 // Сторінка читає базу — будуємо її на кожен запит, щоб нові курси з'являлися одразу
 export const dynamic = "force-dynamic";
@@ -25,6 +29,18 @@ const STEPS = [
   ["03", "Домашка з нагадуванням", "Дедлайн і нагадування батькам на пошту, а в Преміумі — перевірка викладачем."],
   ["04", "Рівні й бейджі", "XP, бейджі та серія днів мотивують, а за пройдений курс — сертифікат."],
 ];
+
+/** Скріни для слайдера-інструкції, які вже лежать у public/guide (решта слайдів — із заглушкою). */
+function guideImages(): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const { slides } of Object.values(GUIDE)) {
+    for (const { id } of slides) {
+      const ext = GUIDE_IMAGE_EXTENSIONS.find((e) => existsSync(path.join(process.cwd(), "public", "guide", `${id}.${e}`)));
+      if (ext) out[id] = `/guide/${id}.${ext}`;
+    }
+  }
+  return out;
+}
 
 export default async function HomePage() {
   const courses = await prisma.course.findMany({ orderBy: { sortOrder: "asc" } });
@@ -50,7 +66,7 @@ export default async function HomePage() {
         <div className="card relative flex flex-col justify-between gap-10 overflow-hidden p-7 sm:p-10 md:p-12">
           <div className="flex flex-col gap-6">
             <div className="anim-rise flex items-center gap-2 self-start rounded-full bg-surface-2 py-1.5 pr-4 pl-1.5 text-sm font-semibold text-soft">
-              <span className="rounded-full bg-text px-2.5 py-0.5 text-xs text-white">9–17</span>
+              <span className="rounded-full bg-text px-2.5 py-0.5 text-xs text-white">Для дітей 9–17 років</span>
               онлайн, у своєму темпі
             </div>
             <h1 style={{ animationDelay: "0.08s" }} className="anim-rise font-display text-[34px] leading-[1.05] font-extrabold tracking-[-0.035em] sm:text-5xl md:text-[60px]">
@@ -88,8 +104,17 @@ export default async function HomePage() {
         </div>
 
         {/* Маскот у перламутровій картці + «віджети» прогресу поверх */}
-        <div className="relative min-h-[420px] overflow-hidden rounded-(--radius-card) bg-[#efeafd] shadow-soft sm:min-h-[520px]" aria-hidden>
-          <Mascot framed cover priority className="absolute inset-0 rounded-none" sizes="(min-width: 1024px) 620px, 100vw" />
+        {/* Робот показується повністю (без обрізання), а картка прогресу заповнює решту висоти під ним */}
+        <div className="relative flex flex-col overflow-hidden rounded-(--radius-card) bg-[#efeafd] shadow-soft" aria-hidden>
+          {/* На десктопі зона робота забирає всю вільну висоту; нижній край м'яко розчиняється у фоні картки */}
+          <div className="flex items-center lg:min-h-0 lg:flex-1">
+            <div
+              className="aspect-[930/735] w-full"
+              style={{ maskImage: "linear-gradient(to bottom, transparent, #000 14%, #000 84%, transparent)", WebkitMaskImage: "linear-gradient(to bottom, transparent, #000 14%, #000 84%, transparent)" }}
+            >
+              <Mascot framed className="h-full w-full rounded-none" sizes="(min-width: 1024px) 620px, 100vw" />
+            </div>
+          </div>
 
           <div style={{ animationDelay: "0.4s" }} className="anim-rise absolute top-5 left-5 flex items-center gap-2 rounded-full bg-white/90 py-1.5 pr-3.5 pl-1.5 shadow-pill backdrop-blur">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber/15 text-amber"><IconFlame size={16} /></span>
@@ -103,7 +128,8 @@ export default async function HomePage() {
             </span>
           </div>
 
-          <div style={{ animationDelay: "0.7s" }} className="anim-rise absolute inset-x-4 bottom-4 flex flex-col gap-3 rounded-[22px] bg-white/92 p-4 shadow-lift backdrop-blur-xl sm:inset-x-auto sm:right-5 sm:bottom-5 sm:w-[300px] sm:p-5">
+          <div className="relative flex shrink-0 justify-center px-4 pb-4 sm:px-5 sm:pb-5">
+          <div style={{ animationDelay: "0.7s" }} className="anim-rise -mt-10 flex w-full max-w-[420px] flex-col gap-3 rounded-[22px] bg-white/92 p-4 shadow-lift backdrop-blur-xl sm:-mt-14 sm:p-5">
             <div className="flex items-start justify-between gap-2">
               <div className="flex flex-col">
                 <span className="text-xs text-muted">Курс · Python</span>
@@ -124,6 +150,7 @@ export default async function HomePage() {
               <span className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-good/10 text-good"><IconCheck size={14} /> Урок 5</span>
               <span className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-surface-2 text-soft"><IconClock size={14} /> До п’ятниці</span>
             </div>
+          </div>
           </div>
         </div>
       </section>
@@ -151,6 +178,17 @@ export default async function HomePage() {
       {/* ── Курси ── */}
       <section id="courses" className="mx-auto max-w-[1240px] scroll-mt-28 px-3 pt-16 md:px-6 md:pt-24">
         <Reveal><CourseCatalog groups={groups} /></Reveal>
+      </section>
+
+      {/* ── Як користуватися: слайдер для батьків і дітей ── */}
+      <section id="guide" className="mx-auto flex max-w-[1240px] scroll-mt-28 flex-col gap-6 px-3 pt-16 md:px-6 md:pt-24">
+        <Reveal className="flex flex-col gap-3">
+          <span className="self-start rounded-full bg-surface-2 px-3.5 py-1.5 text-sm font-semibold text-soft">Як це працює</span>
+          <h2 className="font-display text-3xl font-extrabold sm:text-[42px]">Як користуватися платформою</h2>
+        </Reveal>
+        <Reveal>
+          <PlatformGuide images={guideImages()} />
+        </Reveal>
       </section>
 
       {/* ── Для батьків: «дашборд» батьківського кабінету ── */}

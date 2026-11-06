@@ -1,14 +1,25 @@
 import Link from "next/link";
+import { LogoMark } from "@/components/logo-mark";
 import { logout } from "@/actions/auth";
 import { getCurrentUser, homeFor } from "@/lib/dal";
 
-export function Logo({ small = false }: { small?: boolean }) {
+export function Logo({ small = false, mark = false }: { small?: boolean; /** показати знак ліворуч від назви */ mark?: boolean }) {
   return (
-    <Link href="/" className="flex flex-col gap-0.5" aria-label="ITCodeCraft — на головну">
-      <span className={`font-display leading-none font-extrabold tracking-tight ${small ? "text-lg" : "text-lg min-[380px]:text-xl sm:text-[21px]"}`}>
-        IT<span className="text-accent">Code</span>Craft
+    <Link href="/" className="flex items-center gap-2.5" aria-label="ITCodeCraft — на головну">
+      {mark && <LogoMark size={small ? 36 : 40} />}
+      {/* inline-flex: колонка завширшки з назву, підпис розтягується рівно під нею */}
+      <span className="inline-flex flex-col gap-1">
+        <span className={`font-display leading-none font-extrabold tracking-tight ${small ? "text-lg" : "text-lg min-[380px]:text-xl sm:text-[21px]"}`}>
+          IT<span className="text-accent">Code</span>Craft
+        </span>
+        {/* Розрядку підібрано так, щоб підпис був рівно завширшки з назву на кожному розмірі шрифту */}
+        <span
+          className={`-mr-[0.25em] text-[9px] leading-none font-semibold whitespace-nowrap text-faint ${small ? "tracking-[0.14em]" : "tracking-[0.14em] min-[380px]:tracking-[0.21em] sm:tracking-[0.25em]"}`}
+          aria-hidden
+        >
+          IT SCHOOL · ONLINE
+        </span>
       </span>
-      <span className="text-[10px] font-semibold tracking-[3px] text-faint">IT SCHOOL · ONLINE</span>
     </Link>
   );
 }
@@ -26,7 +37,7 @@ export async function SiteHeader() {
     <header className="sticky top-0 z-40 px-3 pt-3 md:px-6">
       {/* Плаваюча біла «таблетка»-шапка */}
       <div className="mx-auto flex h-16 max-w-[1240px] items-center justify-between gap-3 rounded-full border border-white/80 bg-white/85 pr-2 pl-5 shadow-soft backdrop-blur-xl md:h-[72px] md:pr-3 md:pl-7">
-        <Logo />
+        <Logo mark />
         <nav className="hidden items-center gap-1 rounded-full bg-surface-2 p-1 lg:flex" aria-label="Головне меню">
           {MENU.map(([href, label]) => (
             <Link key={href} href={href} className="inline-flex h-10 items-center rounded-full px-4.5 text-sm font-semibold text-soft transition-colors hover:bg-white hover:text-text hover:shadow-pill">

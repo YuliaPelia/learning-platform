@@ -25,10 +25,7 @@ export function CabinetShell({
           <div className="flex flex-col gap-3 px-4 pt-3.5 pb-2.5 md:px-8 lg:flex-row lg:items-center lg:gap-6 lg:pt-6 lg:pb-2">
             <div className="flex items-center justify-between gap-3 lg:contents">
               <div className="flex items-center gap-3 lg:w-[200px] lg:shrink-0">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white font-mono text-sm font-bold shadow-pill" aria-hidden>
-                  {"</>"}
-                </span>
-                <Logo small />
+                <Logo small mark />
               </div>
               <div className="flex items-center gap-2 lg:order-3 lg:ml-auto">
                 <div className="flex items-center gap-2.5 rounded-full border border-line bg-white py-1 pr-1 pl-1 shadow-pill sm:pr-4">
